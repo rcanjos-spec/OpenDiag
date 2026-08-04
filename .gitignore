@@ -1,9 +1,31 @@
-__pycache__/
-*.pyc
-*.pyo
-*.log
+# Virtual Environment
 .venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Coverage
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Type checker
+.mypy_cache/
+
+# Ruff
+.ruff_cache/
+
+# VS Code
 .vscode/
-.idea/
-dist/
+
+# Logs
+logs/
+*.log
+
+# Build
 build/
+dist/
+*.egg-info/
