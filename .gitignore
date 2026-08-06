@@ -1,31 +1,37 @@
-# Virtual Environment
-.venv/
-
 # Python
 __pycache__/
 *.py[cod]
 *.pyo
-*.pyd
 
-# Coverage
+# Virtual Environment
+.venv/
+venv/
+
+# Pytest
+.pytest_cache/
 .coverage
 htmlcov/
-.pytest_cache/
-
-# Type checker
-.mypy_cache/
-
-# Ruff
-.ruff_cache/
 
 # VS Code
 .vscode/
 
-# Logs
-logs/
-*.log
+# JetBrains
+.idea/
 
 # Build
 build/
 dist/
 *.egg-info/
+
+# Logs
+*.log
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+# mypy
+.mypy_cache/
+
+# Ruff
+.ruff_cache/
