@@ -2,22 +2,22 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass
-from enum import Enum
+from enum import IntEnum
 
 
-class ISOTPFrameType(Enum):
+class FrameType(IntEnum):
     """ISO-TP frame types."""
 
-    SINGLE = 0x0
-    FIRST = 0x1
-    CONSECUTIVE = 0x2
-    FLOW_CONTROL = 0x3
+    SINGLE = 0
+    FIRST = 1
+    CONSECUTIVE = 2
+    FLOW_CONTROL = 3
 
 
 @dataclass(slots=True)
 class ISOTPFrame:
     payload: bytes
-    frame_type: ISOTPFrameType = ISOTPFrameType.SINGLE
+    frame_type: FrameType = FrameType.SINGLE
     message_length: int | None = None
     sequence_number: int | None = None
 
@@ -33,42 +33,42 @@ class ISOTPFrame:
         pci_type = data[0] >> 4
 
         # Single Frame
-        if pci_type == ISOTPFrameType.SINGLE.value:
+        if pci_type == FrameType.SINGLE.value:
             length = data[0] & 0x0F
             payload = data[1 : 1 + length]
 
             return cls(
                 payload=payload,
-                frame_type=ISOTPFrameType.SINGLE,
+                frame_type=FrameType.SINGLE,
             )
 
         # First Frame
-        if pci_type == ISOTPFrameType.FIRST.value:
+        if pci_type == FrameType.FIRST.value:
             message_length = ((data[0] & 0x0F) << 8) | data[1]
             payload = data[2:]
 
             return cls(
                 payload=payload,
-                frame_type=ISOTPFrameType.FIRST,
+                frame_type=FrameType.FIRST,
                 message_length=message_length,
             )
 
         # Consecutive Frame
-        if pci_type == ISOTPFrameType.CONSECUTIVE.value:
+        if pci_type == FrameType.CONSECUTIVE.value:
             sequence_number = data[0] & 0x0F
             payload = data[1:]
 
             return cls(
                 payload=payload,
-                frame_type=ISOTPFrameType.CONSECUTIVE,
+                frame_type=FrameType.CONSECUTIVE,
                 sequence_number=sequence_number,
             )
 
         # Flow Control
-        if pci_type == ISOTPFrameType.FLOW_CONTROL.value:
+        if pci_type == FrameType.FLOW_CONTROL.value:
             return cls(
                 payload=b"",
-                frame_type=ISOTPFrameType.FLOW_CONTROL,
+                frame_type=FrameType.FLOW_CONTROL,
             )
 
         raise NotImplementedError(f"Unsupported ISO-TP PCI type: {pci_type}")
@@ -102,12 +102,12 @@ class ISOTPReassembler:
     ) -> ISOTPMessage | None:
         """Feed one ISO-TP frame."""
 
-        if frame.frame_type is ISOTPFrameType.SINGLE:
+        if frame.frame_type is FrameType.SINGLE:
             return ISOTPMessage(
                 payload=frame.payload,
             )
 
-        if frame.frame_type is ISOTPFrameType.FIRST:
+        if frame.frame_type is FrameType.FIRST:
             self._buffer = frame.payload
             self._expected_length = frame.length
             self._next_sequence = 1
@@ -115,7 +115,7 @@ class ISOTPReassembler:
 
             return None
 
-        if frame.frame_type is ISOTPFrameType.CONSECUTIVE:
+        if frame.frame_type is FrameType.CONSECUTIVE:
             if (time.monotonic() - self._start_time) > self._timeout:
                 self._reset()
                 raise TimeoutError("ISO-TP reassembly timeout")
@@ -134,33 +134,13 @@ class ISOTPReassembler:
             if len(self._buffer) >= self._expected_length:
                 payload = self._buffer[: self._expected_length]
 
-                self.reset()
+                self._reset()
 
                 return ISOTPMessage(payload=payload)
 
         return None
 
         raise NotImplementedError(f"Unsupported frame type: {frame.frame_type}")
-
-    def test_reassembler_resets_after_timeout() -> None:
-        reassembler = ISOTPReassembler(timeout=0.1)
-
-        first = ISOTPFrame.from_can_data(b"\x10\x09\x62\xf1\x90\x31\x47\x31")
-
-        assert reassembler.feed(first) is None
-
-        import time
-
-        time.sleep(0.2)
-
-        try:
-            reassembler.feed(ISOTPFrame.from_can_data(b"\x21\x58\x58\x58"))
-        except TimeoutError:
-            pass
-
-        new_first = ISOTPFrame.from_can_data(b"\x10\x09\x62\xf1\x90\x31\x47\x31")
-
-        assert reassembler.feed(new_first) is None
 
 
 class ISOTPSegmenter:
@@ -173,5 +153,5 @@ class ISOTPSegmenter:
 
         yield ISOTPFrame(
             payload=payload,
-            frame_type=ISOTPFrameType.SINGLE,
+            frame_type=FrameType.SINGLE,
         )
