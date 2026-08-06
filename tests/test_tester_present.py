@@ -33,3 +33,9 @@ def test_suppress_positive_response_data() -> None:
 
 def test_sid() -> None:
     assert TesterPresentRequest.SID == 0x3E
+
+
+def test_service_id_is_first_byte() -> None:
+    request = TesterPresentRequest()
+
+    assert request.data[0] == TesterPresentRequest.SID

@@ -4,6 +4,8 @@ import time
 from dataclasses import dataclass
 from enum import IntEnum
 
+from opendiag.core.can_frame import CANFrame
+
 
 class FrameType(IntEnum):
     """ISO-TP frame types."""
@@ -27,6 +29,15 @@ class ISOTPFrame:
             return self.message_length
 
         return len(self.payload)
+
+    @classmethod
+    def from_can_frame(
+        cls,
+        frame: CANFrame,
+    ) -> ISOTPFrame:
+        return cls.from_can_data(
+            frame.data,
+        )
 
     @classmethod
     def from_can_data(cls, data: bytes) -> ISOTPFrame:
@@ -72,6 +83,18 @@ class ISOTPFrame:
             )
 
         raise NotImplementedError(f"Unsupported ISO-TP PCI type: {pci_type}")
+
+    def to_can_frame(
+        self,
+        arbitration_id: int,
+    ) -> CANFrame:
+        """Convert an ISO-TP frame into a CAN frame."""
+
+        return CANFrame(
+            arbitration_id=arbitration_id,
+            data=bytes([self.length]) + self.payload,
+            timestamp=0.0,
+        )
 
 
 @dataclass(slots=True)

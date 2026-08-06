@@ -1,5 +1,6 @@
 from unittest.mock import Mock, call
 
+from opendiag.core.can_frame import CANFrame
 from opendiag.protocols.isotp import (
     ISOTPFrame,
     ISOTPMessage,
@@ -30,30 +31,37 @@ def test_transport_sends_data_to_bus() -> None:
     )
 
     frame = bus.send.call_args.args[0]
-    assert frame.payload == b"\x3e\x00"
-    assert frame.length == 2
+
+    assert isinstance(frame, CANFrame)
+    assert frame.data == b"\x02\x3e\x00"
+    assert frame.arbitration_id == 0x7E0
 
 
 def test_transport_receives_data_from_bus() -> None:
     bus = Mock()
 
-    bus.receive.return_value = ISOTPFrame.from_can_data(
-        b"\x02\x7e\x00",
+    bus.receive.return_value = CANFrame(
+        arbitration_id=0x7E8,
+        data=b"\x02\x7e\x00",
+        timestamp=0.0,
     )
+
     transport = ISOTPTransport(
         bus=bus,
     )
 
     data = transport.receive()
 
-    assert isinstance(data, ISOTPMessage)
-    assert data.payload == b"\x7e\x00"
+    assert data == b"\x7e\x00"
 
 
 def test_transport_uses_segmenter_to_send() -> None:
     bus = Mock()
 
-    frame = object()
+    frame = Mock()
+
+    can_frame = Mock()
+    frame.to_can_frame.return_value = can_frame
 
     segmenter = Mock()
     segmenter.segment.return_value = [frame]
@@ -71,20 +79,29 @@ def test_transport_uses_segmenter_to_send() -> None:
         b"\x22\xf1\x90",
     )
 
-    bus.send.assert_called_once_with(frame)
+    frame.to_can_frame.assert_called_once_with(
+        arbitration_id=0x7E0,
+    )
+
+    bus.send.assert_called_once_with(can_frame)
 
 
 def test_transport_uses_reassembler_to_receive() -> None:
     bus = Mock()
 
-    frame = object()
+    can_frame = CANFrame(
+        arbitration_id=0x7E8,
+        data=b"\x02\x7e\x00",
+        timestamp=0.0,
+    )
 
-    bus.receive.return_value = frame
-
-    message = object()
+    bus.receive.return_value = can_frame
 
     reassembler = Mock()
-    reassembler.feed.return_value = message
+
+    reassembler.feed.return_value = ISOTPMessage(
+        payload=b"\x7e\x00",
+    )
 
     transport = ISOTPTransport(
         bus=bus,
@@ -94,19 +111,23 @@ def test_transport_uses_reassembler_to_receive() -> None:
 
     result = transport.receive()
 
-    reassembler.feed.assert_called_once_with(frame)
+    reassembler.feed.assert_called_once()
 
-    assert result is message
+    frame = reassembler.feed.call_args.args[0]
+
+    assert isinstance(frame, ISOTPFrame)
+    assert result == b"\x7e\x00"
 
 
 def test_transport_sends_all_segmented_frames() -> None:
     bus = Mock()
 
-    frames = [
-        object(),
-        object(),
-        object(),
-    ]
+    frames = []
+
+    for _ in range(3):
+        frame = Mock()
+        frame.to_can_frame.return_value = Mock()
+        frames.append(frame)
 
     segmenter = Mock()
     segmenter.segment.return_value = frames
@@ -123,9 +144,9 @@ def test_transport_sends_all_segmented_frames() -> None:
 
     bus.send.assert_has_calls(
         [
-            call(frames[0]),
-            call(frames[1]),
-            call(frames[2]),
+            call(frames[0].to_can_frame.return_value),
+            call(frames[1].to_can_frame.return_value),
+            call(frames[2].to_can_frame.return_value),
         ]
     )
 

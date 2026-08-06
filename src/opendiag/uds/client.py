@@ -1,5 +1,6 @@
 from opendiag.transport import Transport
 from opendiag.uds.request import UDSRequest
+from opendiag.uds.services.tester_present import TesterPresent
 
 
 class UDSClient:
@@ -29,3 +30,18 @@ class UDSClient:
         response = self._transport.receive()
 
         return self._parser.parse(response)
+
+    def tester_present(
+        self,
+    ):
+        request = TesterPresent()
+
+        self._transport.send(
+            request.data,
+        )
+
+        response = self._transport.receive()
+
+        return self._parser.parse(
+            response,
+        )
