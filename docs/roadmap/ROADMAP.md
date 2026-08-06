@@ -1,23 +1,20 @@
 # OpenDiag Roadmap
 
-## v0.1.0-alpha
+## Fase 1 — Modelagem UDS ✅
+- [x] Requests
+- [x] Serviços principais
 
-### Infrastructure
-- [x] Project structure
-- [x] Request
-- [x] Response
-- [x] Registry
-- [x] BaseService
-- [ ] Client
-- [ ] Tests passing
+## Fase 2 — Integração 🔄
+- [x] UDSClient
+- [ ] Response Registry
+- [ ] UDSResponse
+- [ ] NegativeResponse
 
-### UDS
-- [ ] Diagnostic Session Control
-- [ ] ECU Reset
-- [ ] Tester Present
-- [ ] ReadDataByIdentifier
+## Fase 3
+- [ ] ISO-TP
+- [ ] CAN
+- [ ] Sniffer
 
-### Quality
-- [ ] Ruff
-- [ ] mypy
-- [ ] Coverage > 90%
+## Fase 4
+- [ ] CLI
+- [ ] GUI

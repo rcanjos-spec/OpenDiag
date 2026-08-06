@@ -9,6 +9,8 @@ from opendiag.uds.request import UDSRequest
 class TesterPresent(UDSRequest):
     """UDS Service 0x3E - Tester Present."""
 
+    __test__ = False
+
     SID: ClassVar[int] = TESTER_PRESENT
 
     suppress_response: bool = False

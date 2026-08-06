@@ -12,3 +12,11 @@ class UDSResponse:
 @dataclass(slots=True, frozen=True)
 class PositiveResponse(UDSResponse):
     """Positive UDS response."""
+
+
+@dataclass(slots=True, frozen=True, kw_only=True)
+class NegativeResponse(UDSResponse):
+    """Negative UDS response."""
+
+    original_sid: int
+    response_code: int

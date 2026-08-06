@@ -109,15 +109,13 @@ src/
 Initially, only the following enumerations will be implemented:
 
 ```python
-class ServiceID(IntEnum):
-    ...
+class ServiceID(IntEnum): ...
 ```
 
 Followed by:
 
 ```python
-class DiagnosticSessionType(IntEnum):
-    ...
+class DiagnosticSessionType(IntEnum): ...
 ```
 
 No request or response classes will be created before these protocol constants are available.
