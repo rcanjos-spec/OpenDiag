@@ -52,15 +52,31 @@ def test_reassembler_resets_after_timeout() -> None:
 
     assert reassembler.feed(first) is None
 
-    import time
-
     time.sleep(0.2)
 
-    try:
-        reassembler.feed(ISOTPFrame.from_can_data(b"\x21\x58\x58\x58"))
-    except TimeoutError:
-        pass
+    with pytest.raises(TimeoutError):
+        reassembler.feed(
+            ISOTPFrame.from_can_data(
+                b"\x21\x58\x58\x58",
+            )
+        )
 
     new_first = ISOTPFrame.from_can_data(b"\x10\x09\x62\xf1\x90\x31\x47\x31")
 
     assert reassembler.feed(new_first) is None
+
+
+def test_reassembler_waits_for_remaining_frames() -> None:
+    reassembler = ISOTPReassembler()
+
+    first = ISOTPFrame.from_can_data(
+        b"\x10\x0c\x62\xf1\x90\x31\x47\x31",
+    )
+
+    assert reassembler.feed(first) is None
+
+    consecutive = ISOTPFrame.from_can_data(
+        b"\x21\x58\x58\x58",
+    )
+
+    assert reassembler.feed(consecutive) is None
