@@ -173,8 +173,37 @@ class ISOTPSegmenter:
         self,
         payload: bytes,
     ):
+        # Single Frame
+        if len(payload) <= 7:
+            yield ISOTPFrame(
+                payload=payload,
+                frame_type=FrameType.SINGLE,
+            )
+            return
 
+        # First Frame
         yield ISOTPFrame(
-            payload=payload,
-            frame_type=FrameType.SINGLE,
+            payload=payload[:6],
+            frame_type=FrameType.FIRST,
+            message_length=len(payload),
         )
+
+        # Consecutive Frames
+        sequence_number = 1
+
+        remaining = payload[6:]
+
+        while remaining:
+            chunk = remaining[:7]
+            remaining = remaining[7:]
+
+            yield ISOTPFrame(
+                payload=chunk,
+                frame_type=FrameType.CONSECUTIVE,
+                sequence_number=sequence_number,
+            )
+
+            sequence_number = (sequence_number + 1) & 0x0F
+
+            if sequence_number == 0:
+                sequence_number = 1
