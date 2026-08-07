@@ -106,3 +106,20 @@ Planned features:
 - Mock Transport improvements
 - Multi-frame support
 - Real ECU communication
+
+## Status
+
+### Milestone M1 (Concluído)
+
+- ✔ CAN Frame
+- ✔ Python CAN Bus
+- ✔ ISO-TP
+- ✔ UDS Client
+- ✔ Tester Present
+- ✔ 106 testes automatizados
+- ✔ Ruff Check
+- ✔ Ruff Format
+
+Próximo objetivo:
+
+- Comunicação com ECU Magneti Marelli IAW 10GF

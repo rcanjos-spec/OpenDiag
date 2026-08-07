@@ -1,21 +1,26 @@
-# OpenDiag Development Manifesto
+# ChatGPT Development Guide
 
-O OpenDiag será desenvolvido como um projeto de engenharia de software.
+## Descrição
 
-Cada decisão deve priorizar:
+Este documento define o padrão de desenvolvimento utilizado no projeto **OpenDiag**. Seu objetivo é garantir consistência entre as sessões de trabalho, facilitar a retomada do projeto e registrar as práticas adotadas durante o desenvolvimento.
 
-- Arquitetura antes da implementação.
-- Testes antes do código.
-- Uma alteração por vez.
-- Código simples.
-- Responsabilidade única.
-- Documentação atualizada.
-- Projeto sempre estável.
+O guia documenta:
 
-Nenhuma sessão termina com testes falhando.
+- Arquitetura do projeto.
+- Organização das sprints.
+- Fluxo de desenvolvimento orientado por testes (TDD).
+- Convenções de código.
+- Estrutura de diretórios.
+- Processo de revisão e validação.
+- Padrões para criação de testes.
+- Registro de decisões técnicas.
+- Procedimento para validação em hardware.
+- Boas práticas para utilização do ChatGPT como parceiro de desenvolvimento.
 
-Nenhuma implementação começa sem revisão da arquitetura.
+Este documento deve ser atualizado sempre que houver mudanças relevantes na arquitetura ou no processo de desenvolvimento.
 
-O objetivo não é escrever código rapidamente.
+---
 
-O objetivo é construir um framework profissional, confiável e sustentável.
+## Objetivo
+
+Manter o desenvolvimento do OpenDiag organizado, reproduzível e fácil de continuar, mesmo após longos períodos sem alterações, preservando o histórico de decisões técnicas e garantindo a qualidade do código.

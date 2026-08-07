@@ -13,6 +13,7 @@ class Recorder:
 
     def __init__(self, filename: Path | str) -> None:
         self._filename = Path(filename)
+        self._filename.parent.mkdir(parents=True, exist_ok=True)
 
     def record(self, frame: CANFrame) -> None:
         """Append one CAN frame to the log file."""
