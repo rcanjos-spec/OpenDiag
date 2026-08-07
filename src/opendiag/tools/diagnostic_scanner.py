@@ -29,3 +29,11 @@ class DiagnosticScanner:
     def receive(self) -> CANFrame:
         """Receive a CAN frame."""
         return self._bus.receive()
+
+    def request(
+        self,
+        frame: CANFrame,
+    ) -> CANFrame:
+        """Send a request and wait for a response."""
+        self.send(frame)
+        return self.receive()
