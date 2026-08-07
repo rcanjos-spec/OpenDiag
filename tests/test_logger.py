@@ -1,11 +1,6 @@
 from opendiag.core.can_frame import CANFrame
 from opendiag.logger import Logger
 
-print("========== TEST LOGGER ==========")
-print("Logger =", Logger)
-print("CANFrame =", CANFrame)
-print("===============================")
-
 
 def test_logger_creation() -> None:
     logger = Logger()
@@ -13,14 +8,20 @@ def test_logger_creation() -> None:
     assert logger is not None
 
 
-def test_logger_methods() -> None:
+def test_logger_methods(caplog) -> None:
     logger = Logger()
 
-    logger.debug("debug")
     logger.info("info")
     logger.warning("warning")
     logger.error("error")
     logger.critical("critical")
+
+    messages = [record.message for record in caplog.records]
+
+    assert "info" in messages
+    assert "warning" in messages
+    assert "error" in messages
+    assert "critical" in messages
 
 
 def test_can_rx_log(caplog) -> None:
