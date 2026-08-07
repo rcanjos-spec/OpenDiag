@@ -174,3 +174,20 @@ OpenDiag v0.4.0-alpha
 
 
 A infraestrutura de comunicação CAN, ISO-TP e UDS foi concluída, estabilizada e validada por 106 testes automatizados. O projeto está pronto para iniciar a validação em bancada com a Magneti Marelli IAW 10GF.
+
+Estado atual 7/08/23
+
+                    OpenDiag
+                        │
+ ┌──────────────────────┼──────────────────────┐
+ │                      │                      │
+ ▼                      ▼                      ▼
+Core                  ISO-TP                 UDS
+ │                      │                      │
+ │                      │                      │
+CANFrame            Segmenter             UDSClient
+CANBus              Reassembler           UDSRequest
+MockCANBus          Transport             UDSResponse
+Logger                                    BaseService
+Recorder                                  TesterPresent
+Sniffer                                   ReadDataByIdentifier
