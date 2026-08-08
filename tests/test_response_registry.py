@@ -5,6 +5,9 @@ from opendiag.uds.responses.diagnostic_session_control import (
 from opendiag.uds.responses.read_data_by_identifier import (
     ReadDataByIdentifierResponse,
 )
+from opendiag.uds.responses.tester_present import (
+    TesterPresentResponse,
+)
 
 
 def test_register_response() -> None:
@@ -51,3 +54,9 @@ def test_default_registry_contains_diagnostic_session_control() -> None:
     registry = ResponseRegistry()
 
     assert registry.get(0x50) is DiagnosticSessionControlResponse
+
+
+def test_default_registry_contains_tester_present() -> None:
+    registry = ResponseRegistry()
+
+    assert registry.get(0x7E) is TesterPresentResponse

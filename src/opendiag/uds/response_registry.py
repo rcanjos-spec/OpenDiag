@@ -8,6 +8,9 @@ from opendiag.uds.responses.read_data_by_identifier import (
 from opendiag.uds.responses.security_access import (
     SecurityAccessResponse,
 )
+from opendiag.uds.responses.tester_present import (
+    TesterPresentResponse,
+)
 
 
 class ResponseRegistry:
@@ -31,6 +34,11 @@ class ResponseRegistry:
         self.register(
             0x67,
             SecurityAccessResponse,
+        )
+
+        self.register(
+            0x7E,
+            TesterPresentResponse,
         )
 
     def register(
