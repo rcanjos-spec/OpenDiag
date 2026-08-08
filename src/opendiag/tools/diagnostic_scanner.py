@@ -6,6 +6,8 @@ Active CAN diagnostic tool.
 
 from __future__ import annotations
 
+from collections.abc import Callable
+
 from opendiag.bus.base import CANBus
 from opendiag.core.can_frame import CANFrame
 
@@ -33,7 +35,26 @@ class DiagnosticScanner:
     def request(
         self,
         frame: CANFrame,
+        *,
+        response_filter: Callable[[CANFrame], bool],
+        timeout: int = 3,
     ) -> CANFrame:
-        """Send a request and wait for a response."""
+        """Send a request and wait for the expected response."""
+
         self.send(frame)
-        return self.receive()
+
+        attempts = 0
+
+        while True:
+            response = self.receive()
+
+            if response is None:
+                attempts += 1
+
+                if attempts >= timeout:
+                    raise TimeoutError
+
+                continue
+
+            if response_filter(response):
+                return response

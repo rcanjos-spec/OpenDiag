@@ -1,4 +1,7 @@
 from opendiag.uds.response_registry import ResponseRegistry
+from opendiag.uds.responses.diagnostic_session_control import (
+    DiagnosticSessionControlResponse,
+)
 from opendiag.uds.responses.read_data_by_identifier import (
     ReadDataByIdentifierResponse,
 )
@@ -36,3 +39,15 @@ def test_create_registered_response() -> None:
 
     assert response.did == 0xF190
     assert response.value == b"123456789"
+
+
+def test_default_registry_contains_read_data_by_identifier() -> None:
+    registry = ResponseRegistry()
+
+    assert registry.get(0x62) is ReadDataByIdentifierResponse
+
+
+def test_default_registry_contains_diagnostic_session_control() -> None:
+    registry = ResponseRegistry()
+
+    assert registry.get(0x50) is DiagnosticSessionControlResponse

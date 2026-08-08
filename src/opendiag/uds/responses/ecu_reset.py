@@ -1,13 +1,16 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 
+from opendiag.uds.reset import ResetType
 from opendiag.uds.response import PositiveResponse
 
 
 @dataclass(slots=True, frozen=True, kw_only=True)
 class ECUResetResponse(PositiveResponse):
-    """Positive response for UDS Service 0x11."""
+    """Positive response for ECU Reset."""
 
-    reset_type: int
+    reset_type: ResetType
 
     @classmethod
     def from_bytes(
@@ -16,5 +19,5 @@ class ECUResetResponse(PositiveResponse):
     ) -> ECUResetResponse:
         return cls(
             sid=data[0],
-            reset_type=data[1],
+            reset_type=ResetType(data[1]),
         )

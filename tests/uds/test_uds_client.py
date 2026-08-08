@@ -1,6 +1,8 @@
 from unittest.mock import Mock
 
 from opendiag.uds.client import UDSClient
+from opendiag.uds.reset import ResetType
+from opendiag.uds.security import SecurityLevel
 from opendiag.uds.services.tester_present import TesterPresent
 
 
@@ -82,3 +84,60 @@ def test_send_returns_response() -> None:
     response = client.send(TesterPresent())
 
     assert response is expected
+
+
+def test_ecu_reset() -> None:
+    transport = Mock()
+
+    transport.receive.return_value = b"\x51\x03"
+
+    parser = Mock()
+
+    parser.parse.return_value = "OK"
+
+    client = UDSClient(
+        transport=transport,
+        parser=parser,
+    )
+
+    response = client.ecu_reset(
+        ResetType.SOFT,
+    )
+
+    transport.send.assert_called_once_with(
+        b"\x11\x03",
+    )
+
+    parser.parse.assert_called_once_with(
+        b"\x51\x03",
+    )
+
+    assert response == "OK"
+
+
+def test_security_access() -> None:
+    transport = Mock()
+
+    transport.receive.return_value = b"\x67\x01\x12\x34\x56\x78"
+
+    parser = Mock()
+    parser.parse.return_value = "OK"
+
+    client = UDSClient(
+        transport=transport,
+        parser=parser,
+    )
+
+    response = client.security_access(
+        level=SecurityLevel.LEVEL_1_REQUEST_SEED,
+    )
+
+    transport.send.assert_called_once_with(
+        b"\x27\x01",
+    )
+
+    parser.parse.assert_called_once_with(
+        b"\x67\x01\x12\x34\x56\x78",
+    )
+
+    assert response == "OK"

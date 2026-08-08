@@ -1,25 +1,31 @@
-## Estado
+# Project Status
 
-🟢 Estável
+## Core
 
-## Último pytest
+- CAN ✔
+- ISO-TP ✔
+- PythonCANBus ✔
+- UDS Client ✔
+- Response Parser ✔
+- Response Registry ✔
 
-47 passed
+## Serviços UDS
 
-## Serviços concluídos
+- Tester Present ✔
+- Diagnostic Session Control ✔
+- ECU Reset ✔
+- ReadDataByIdentifier ✔
+- SecurityAccess ✔
 
-- DiagnosticSessionControl
-- ECUReset
-- TesterPresent
+## Hardware
 
-## Architecture Checkpoint
+- USB-CAN ✔
+- PythonCANBus ✔
+- ISOTPTransport.send() ✔
+- ISOTPTransport.receive() ⏳
 
-02 - Aprovada
+## Testes
 
-## Próxima Sprint
+139 testes passando
 
-31
-
-## Próximo Serviço
-
-ReadDataByIdentifier (SID 0x22)
+Status: GREEN

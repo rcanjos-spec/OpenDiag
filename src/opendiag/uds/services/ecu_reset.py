@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 from typing import ClassVar
 
@@ -11,8 +13,13 @@ class ECUReset(UDSRequest):
 
     SID: ClassVar[int] = 0x11
 
-    reset_type: ResetType
+    reset_type: ResetType = ResetType.HARD
 
     @property
     def data(self) -> bytes:
-        return bytes([self.SID, self.reset_type])
+        return bytes(
+            (
+                self.SID,
+                self.reset_type,
+            )
+        )

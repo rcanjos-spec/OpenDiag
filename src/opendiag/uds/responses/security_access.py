@@ -1,16 +1,17 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 
 from opendiag.uds.response import PositiveResponse
+from opendiag.uds.security import SecurityLevel
 
 
 @dataclass(slots=True, frozen=True, kw_only=True)
 class SecurityAccessResponse(PositiveResponse):
     """Positive response for UDS Service 0x27."""
 
-    __test__ = False
-
-    security_level: int
-    data: bytes
+    security_level: SecurityLevel
+    security_data: bytes
 
     @classmethod
     def from_bytes(
@@ -19,6 +20,6 @@ class SecurityAccessResponse(PositiveResponse):
     ) -> SecurityAccessResponse:
         return cls(
             sid=data[0],
-            security_level=data[1],
-            data=data[2:],
+            security_level=SecurityLevel(data[1]),
+            security_data=data[2:],
         )

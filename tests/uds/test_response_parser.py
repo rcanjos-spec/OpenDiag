@@ -1,0 +1,105 @@
+from opendiag.uds.reset import ResetType
+from opendiag.uds.response_parser import UDSResponseParser
+from opendiag.uds.response_registry import ResponseRegistry
+from opendiag.uds.responses.diagnostic_session_control import (
+    DiagnosticSessionControlResponse,
+)
+from opendiag.uds.responses.ecu_reset import ECUResetResponse
+from opendiag.uds.responses.read_data_by_identifier import (
+    ReadDataByIdentifierResponse,
+)
+from opendiag.uds.responses.security_access import (
+    SecurityAccessResponse,
+)
+from opendiag.uds.security import SecurityLevel
+from opendiag.uds.session import SessionType
+
+
+def test_parse_read_data_by_identifier() -> None:
+    registry = ResponseRegistry()
+
+    registry.register(
+        0x62,
+        ReadDataByIdentifierResponse,
+    )
+
+    parser = UDSResponseParser(
+        registry=registry,
+    )
+
+    response = parser.parse(
+        b"\x62\xf1\x90ABC",
+    )
+
+    assert isinstance(
+        response,
+        ReadDataByIdentifierResponse,
+    )
+
+    assert response.sid == 0x62
+    assert response.did == 0xF190
+    assert response.value == b"ABC"
+
+
+def test_parse_diagnostic_session_control_response() -> None:
+    registry = ResponseRegistry()
+
+    registry.register(
+        0x50,
+        DiagnosticSessionControlResponse,
+    )
+
+    parser = UDSResponseParser(
+        registry=registry,
+    )
+
+    response = parser.parse(
+        b"\x50\x03\x00\x32\x13\x88",
+    )
+
+    assert isinstance(
+        response,
+        DiagnosticSessionControlResponse,
+    )
+
+    assert response.sid == 0x50
+    assert response.session_type == SessionType.EXTENDED
+    assert response.p2_server_max == 50
+    assert response.p2_star_server_max == 5000
+
+
+def test_parse_ecu_reset_response() -> None:
+    parser = UDSResponseParser(
+        registry=ResponseRegistry(),
+    )
+
+    response = parser.parse(
+        b"\x51\x03",
+    )
+
+    assert isinstance(
+        response,
+        ECUResetResponse,
+    )
+
+    assert response.sid == 0x51
+    assert response.reset_type == ResetType.SOFT
+
+
+def test_parse_security_access_response() -> None:
+    parser = UDSResponseParser(
+        registry=ResponseRegistry(),
+    )
+
+    response = parser.parse(
+        b"\x67\x01\x12\x34\x56\x78",
+    )
+
+    assert isinstance(
+        response,
+        SecurityAccessResponse,
+    )
+
+    assert response.sid == 0x67
+    assert response.security_level == SecurityLevel.LEVEL_1_REQUEST_SEED
+    assert response.security_data == b"\x12\x34\x56\x78"

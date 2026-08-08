@@ -13,8 +13,4 @@ class UDSResponseParser:
 
         response_class = self._registry.get(sid)
 
-        return response_class(
-            sid=sid,
-            did=int.from_bytes(data[1:3], "big"),
-            value=data[3:],
-        )
+        return response_class.from_bytes(data)
