@@ -41,8 +41,12 @@ class PythonCANBus(CANBus):
 
     def receive(
         self,
-    ) -> CANFrame:
-        message = self._bus.recv()
+        timeout: float | None = None,
+    ) -> CANFrame | None:
+        message = self._bus.recv(timeout=timeout)
+
+        if message is None:
+            return None
 
         return CANFrame(
             arbitration_id=message.arbitration_id,

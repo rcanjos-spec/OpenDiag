@@ -39,3 +39,4 @@ def test_receive_frame() -> None:
     frame = scanner.receive()
 
     assert frame is expected
+    bus.receive.assert_called_once_with()

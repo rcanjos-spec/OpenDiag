@@ -78,3 +78,20 @@ def test_receive_can_frame() -> None:
     assert frame.arbitration_id == 0x7E8
     assert frame.data == b"\x02\x7e\x00"
     assert frame.is_extended_id is False
+
+
+def test_receive_timeout() -> None:
+    mock_bus = MagicMock()
+    mock_bus.recv.return_value = None
+
+    bus = PythonCANBus(
+        interface="virtual",
+        channel="vcan0",
+        bitrate=500000,
+        bus=mock_bus,
+    )
+
+    frame = bus.receive(timeout=1.0)
+
+    assert frame is None
+    mock_bus.recv.assert_called_once_with(timeout=1.0)

@@ -18,7 +18,10 @@ class CANBus(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def receive(self) -> CANFrame:
+    def receive(
+        self,
+        timeout: float | None = None,
+    ) -> CANFrame | None:
         """Receive a CAN frame."""
         raise NotImplementedError
 
