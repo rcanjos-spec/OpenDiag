@@ -301,7 +301,10 @@ def test_analyze_describes_counter_properties() -> None:
     assert result[0x0F4].counter_analysis == (
         CANCounterAnalysis(
             byte_index=0,
+            bit_offset=0,
+            width=8,
             step=1,
+            modulus=256,
             rollover=True,
         ),
     )
@@ -338,7 +341,10 @@ def test_analyze_describes_counter_without_rollover() -> None:
     assert result[0x0F4].counter_analysis == (
         CANCounterAnalysis(
             byte_index=0,
+            bit_offset=0,
+            width=8,
             step=1,
+            modulus=256,
             rollover=False,
         ),
     )
@@ -375,12 +381,274 @@ def test_analyze_describes_multiple_counter_bytes() -> None:
     assert result[0x200].counter_analysis == (
         CANCounterAnalysis(
             byte_index=0,
+            bit_offset=0,
+            width=8,
             step=1,
+            modulus=256,
             rollover=False,
         ),
         CANCounterAnalysis(
             byte_index=3,
+            bit_offset=0,
+            width=8,
             step=1,
+            modulus=256,
             rollover=False,
+        ),
+    )
+
+
+def test_analyze_detects_four_bit_counter() -> None:
+    frames = [
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=b"\x35\x21\xff\xe0\x00\x00\x1c\xd3",
+            timestamp=0.00,
+        ),
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=b"\x35\x21\xff\xe0\x00\x00\x1d\xce",
+            timestamp=0.01,
+        ),
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=b"\x35\x21\xff\xe0\x00\x00\x1e\xe9",
+            timestamp=0.02,
+        ),
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=b"\x35\x21\xff\xe0\x00\x00\x1f\xf4",
+            timestamp=0.03,
+        ),
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=b"\x35\x21\xff\xe0\x00\x00\x10\x4f",
+            timestamp=0.04,
+        ),
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=b"\x35\x21\xff\xe0\x00\x00\x11\x52",
+            timestamp=0.05,
+        ),
+    ]
+
+    analyzer = CANTrafficAnalyzer()
+
+    result = analyzer.analyze(frames)
+
+    assert result[0x0F4].counter_analysis == (
+        CANCounterAnalysis(
+            byte_index=6,
+            bit_offset=0,
+            width=4,
+            step=1,
+            modulus=16,
+            rollover=True,
+        ),
+    )
+
+
+def test_analyze_describes_four_bit_counter() -> None:
+    frames = [
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=b"\x35\x21\xff\xe0\x00\x00\x1c\xd3",
+            timestamp=0.00,
+        ),
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=b"\x35\x21\xff\xe0\x00\x00\x1d\xce",
+            timestamp=0.01,
+        ),
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=b"\x35\x21\xff\xe0\x00\x00\x1e\xe9",
+            timestamp=0.02,
+        ),
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=b"\x35\x21\xff\xe0\x00\x00\x1f\xf4",
+            timestamp=0.03,
+        ),
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=b"\x35\x21\xff\xe0\x00\x00\x10\x4f",
+            timestamp=0.04,
+        ),
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=b"\x35\x21\xff\xe0\x00\x00\x11\x52",
+            timestamp=0.05,
+        ),
+    ]
+
+    analyzer = CANTrafficAnalyzer()
+
+    result = analyzer.analyze(frames)
+
+    assert result[0x0F4].counter_analysis == (
+        CANCounterAnalysis(
+            byte_index=6,
+            bit_offset=0,
+            width=4,
+            step=1,
+            modulus=16,
+            rollover=True,
+        ),
+    )
+
+
+def test_analyze_detects_multiple_payload_states() -> None:
+    frames = [
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=b"\x35\x20\x7d\x20\x00\x00\x11\x42",
+            timestamp=0.00,
+        ),
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=b"\x35\x21\xff\xe0\x00\x00\x17\x1c",
+            timestamp=0.01,
+        ),
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=b"\x35\x21\xff\xe0\x00\x00\x18\xa7",
+            timestamp=0.02,
+        ),
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=b"\x35\x21\xff\xe0\x00\x00\x19\xba",
+            timestamp=0.03,
+        ),
+    ]
+
+    analyzer = CANTrafficAnalyzer()
+
+    result = analyzer.analyze(frames)
+
+    assert result[0x0F4].payload_states == (
+        (b"\x35\x20\x7d\x20\x00\x00\x11\x42",),
+        (
+            b"\x35\x21\xff\xe0\x00\x00\x17\x1c",
+            b"\x35\x21\xff\xe0\x00\x00\x18\xa7",
+            b"\x35\x21\xff\xe0\x00\x00\x19\xba",
+        ),
+    )
+
+
+def test_analyze_detects_counter_within_payload_state() -> None:
+    frames = [
+        # Estado transitório — sem contador sequencial.
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=b"\x35\x20\x7d\x20\x00\x00\x11\x42",
+            timestamp=0.00,
+        ),
+        # Estado operacional — contador de 4 bits no byte 6.
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=b"\x35\x21\xff\xe0\x00\x00\x1c\xd3",
+            timestamp=0.01,
+        ),
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=b"\x35\x21\xff\xe0\x00\x00\x1d\xce",
+            timestamp=0.02,
+        ),
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=b"\x35\x21\xff\xe0\x00\x00\x1e\xe9",
+            timestamp=0.03,
+        ),
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=b"\x35\x21\xff\xe0\x00\x00\x1f\xf4",
+            timestamp=0.04,
+        ),
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=b"\x35\x21\xff\xe0\x00\x00\x10\x4f",
+            timestamp=0.05,
+        ),
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=b"\x35\x21\xff\xe0\x00\x00\x11\x52",
+            timestamp=0.06,
+        ),
+    ]
+
+    analyzer = CANTrafficAnalyzer()
+
+    result = analyzer.analyze(frames)
+
+    assert result[0x0F4].state_counter_analysis == (
+        (),
+        (
+            CANCounterAnalysis(
+                byte_index=6,
+                bit_offset=0,
+                width=4,
+                step=1,
+                modulus=16,
+                rollover=True,
+            ),
+        ),
+    )
+
+    frames = [
+        # Estado transitório — sem contador sequencial.
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=b"\x35\x20\x7d\x20\x00\x00\x11\x42",
+            timestamp=0.00,
+        ),
+        # Estado operacional — contador de 4 bits no byte 6.
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=b"\x35\x21\xff\xe0\x00\x00\x1c\xd3",
+            timestamp=0.01,
+        ),
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=b"\x35\x21\xff\xe0\x00\x00\x1d\xce",
+            timestamp=0.02,
+        ),
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=b"\x35\x21\xff\xe0\x00\x00\x1e\xe9",
+            timestamp=0.03,
+        ),
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=b"\x35\x21\xff\xe0\x00\x00\x1f\xf4",
+            timestamp=0.04,
+        ),
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=b"\x35\x21\xff\xe0\x00\x00\x10\x4f",
+            timestamp=0.05,
+        ),
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=b"\x35\x21\xff\xe0\x00\x00\x11\x52",
+            timestamp=0.06,
+        ),
+    ]
+
+    analyzer = CANTrafficAnalyzer()
+
+    result = analyzer.analyze(frames)
+
+    assert result[0x0F4].state_counter_analysis == (
+        (),
+        (
+            CANCounterAnalysis(
+                byte_index=6,
+                bit_offset=0,
+                width=4,
+                step=1,
+                modulus=16,
+                rollover=True,
+            ),
         ),
     )

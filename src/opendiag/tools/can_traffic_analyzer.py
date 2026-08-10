@@ -4,6 +4,18 @@ from itertools import pairwise
 from opendiag.core.can_frame import CANFrame
 
 
+@dataclass(frozen=True, slots=True)
+class CANCounterAnalysis:
+    """Describe a detected CAN counter field."""
+
+    byte_index: int
+    bit_offset: int
+    width: int
+    step: int
+    modulus: int
+    rollover: bool
+
+
 @dataclass(slots=True)
 class CANTrafficStatistics:
     """Statistics for a CAN arbitration ID."""
@@ -16,12 +28,27 @@ class CANTrafficStatistics:
     byte_unique_values: tuple[int, ...] = ()
     counter_byte_indices: tuple[int, ...] = ()
     counter_analysis: tuple[CANCounterAnalysis, ...] = ()
+    payload_states: tuple[tuple[bytes, ...], ...] = ()
+    state_counter_analysis: tuple[
+        tuple[CANCounterAnalysis, ...],
+        ...,
+    ] = ()
 
     _payloads: set[bytes] = field(
         default_factory=set,
         repr=False,
     )
     _payload_list: list[bytes] = field(
+        default_factory=list,
+        repr=False,
+    )
+
+    _state_payloads: dict[bytes, list[bytes]] = field(
+        default_factory=dict,
+        repr=False,
+    )
+
+    _observed_payloads: list[bytes] = field(
         default_factory=list,
         repr=False,
     )
@@ -48,15 +75,6 @@ class CANTrafficStatistics:
         return tuple(self._payload_list)
 
 
-@dataclass(frozen=True, slots=True)
-class CANCounterAnalysis:
-    """Describe a detected CAN counter byte."""
-
-    byte_index: int
-    step: int
-    rollover: bool
-
-
 class CANTrafficAnalyzer:
     """Analyze captured CAN traffic."""
 
@@ -76,6 +94,7 @@ class CANTrafficAnalyzer:
 
             statistics.frame_count += 1
             statistics.dlc = frame.dlc
+            statistics._observed_payloads.append(frame.data)
 
             if not statistics._byte_values:
                 statistics._byte_values = [set() for _ in range(frame.dlc)]
@@ -90,6 +109,27 @@ class CANTrafficAnalyzer:
             if frame.data not in statistics._payloads:
                 statistics._payloads.add(frame.data)
                 statistics._payload_list.append(frame.data)
+
+                state_key = frame.data[:6]
+
+                state_payloads = statistics._state_payloads.setdefault(
+                    state_key,
+                    [],
+                )
+
+                if frame.data not in state_payloads:
+                    state_payloads.append(frame.data)
+
+            statistics.payload_states = tuple(
+                tuple(payloads) for payloads in statistics._state_payloads.values()
+            )
+
+            statistics.state_counter_analysis = tuple(
+                self._detect_counter_analysis_for_payloads(
+                    payloads,
+                )
+                for payloads in statistics.payload_states
+            )
 
             statistics.unique_payloads = len(
                 statistics._payloads,
@@ -111,16 +151,8 @@ class CANTrafficAnalyzer:
                 statistics.counter_byte_indices = self._detect_counter_bytes(
                     statistics,
                 )
-                statistics.counter_analysis = tuple(
-                    CANCounterAnalysis(
-                        byte_index=index,
-                        step=1,
-                        rollover=self._has_counter_rollover(
-                            statistics,
-                            index,
-                        ),
-                    )
-                    for index in statistics.counter_byte_indices
+                statistics.counter_analysis = self._detect_counter_analysis(
+                    statistics,
                 )
 
         return result
@@ -139,9 +171,91 @@ class CANTrafficAnalyzer:
         ]
 
         return any(
-            previous == 0xFF and current == 0x00
+            (previous == 0xFF and current == 0x00)
+            or ((previous & 0x0F) == 0x0F and (current & 0x0F) == 0x00)
             for previous, current in pairwise(values)
         )
+
+    @staticmethod
+    def _detect_counter_analysis_for_payloads(
+        payloads: tuple[bytes, ...],
+    ) -> tuple[CANCounterAnalysis, ...]:
+        """Detect counters within a single payload state."""
+
+        if len(payloads) < 2:
+            return ()
+
+        statistics = CANTrafficStatistics()
+
+        statistics.dlc = max(len(payload) for payload in payloads)
+
+        statistics._payload_list = list(payloads)
+        statistics._observed_payloads = list(payloads)
+
+        statistics.counter_byte_indices = CANTrafficAnalyzer._detect_counter_bytes(
+            statistics,
+        )
+
+        return CANTrafficAnalyzer._detect_counter_analysis(
+            statistics,
+        )
+
+    @staticmethod
+    def _detect_counter_analysis(
+        statistics: CANTrafficStatistics,
+    ) -> tuple[CANCounterAnalysis, ...]:
+        """Describe detected CAN counter fields."""
+
+        analysis: list[CANCounterAnalysis] = []
+
+        for index in statistics.counter_byte_indices:
+            values = [
+                payload[index]
+                for payload in statistics._observed_payloads
+                if len(payload) > index
+            ]
+
+            if len(values) < 2:
+                continue
+
+            full_byte_counter = all(
+                (current - previous) % 256 == 1
+                for previous, current in pairwise(values)
+            )
+
+            nibble_values = [value & 0x0F for value in values]
+
+            nibble_counter = all(
+                (current - previous) % 16 == 1
+                for previous, current in pairwise(nibble_values)
+            )
+
+            if full_byte_counter:
+                width = 8
+                modulus = 256
+            elif nibble_counter:
+                width = 4
+                modulus = 16
+            else:
+                continue
+
+            rollover = CANTrafficAnalyzer._has_counter_rollover(
+                statistics,
+                index,
+            )
+
+            analysis.append(
+                CANCounterAnalysis(
+                    byte_index=index,
+                    bit_offset=0,
+                    width=width,
+                    step=1,
+                    modulus=modulus,
+                    rollover=rollover,
+                )
+            )
+
+        return tuple(analysis)
 
     @staticmethod
     def _detect_counter_bytes(
@@ -149,7 +263,7 @@ class CANTrafficAnalyzer:
     ) -> tuple[int, ...]:
         """Detect byte positions with sequential +1 behavior."""
 
-        if len(statistics._payload_list) < 2:
+        if len(statistics._observed_payloads) < 2:
             return ()
 
         counter_indices: list[int] = []
@@ -157,16 +271,21 @@ class CANTrafficAnalyzer:
         for index in range(statistics.dlc):
             values = [
                 payload[index]
-                for payload in statistics._payload_list
+                for payload in statistics._observed_payloads
                 if len(payload) > index
             ]
 
             if len(values) < 2:
                 continue
 
+            nibble_values = [value & 0x0F for value in values]
+
             if all(
                 (current - previous) % 256 == 1
                 for previous, current in pairwise(values)
+            ) or all(
+                (current - previous) % 16 == 1
+                for previous, current in pairwise(nibble_values)
             ):
                 counter_indices.append(index)
 
