@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from itertools import pairwise
 
 from opendiag.core.can_frame import CANFrame
 
@@ -13,6 +14,7 @@ class CANTrafficStatistics:
     frequency_hz: float = 0.0
     period_ms: float = 0.0
     byte_unique_values: tuple[int, ...] = ()
+    counter_byte_indices: tuple[int, ...] = ()
 
     _payloads: set[bytes] = field(
         default_factory=set,
@@ -95,4 +97,38 @@ class CANTrafficAnalyzer:
 
                 statistics.period_ms = 1000.0 / statistics.frequency_hz
 
+        for statistics in result.values():
+            statistics.counter_byte_indices = self._detect_counter_bytes(
+                statistics,
+            )
+
         return result
+
+    @staticmethod
+    def _detect_counter_bytes(
+        statistics: CANTrafficStatistics,
+    ) -> tuple[int, ...]:
+        """Detect byte positions with sequential +1 behavior."""
+
+        if len(statistics._payload_list) < 2:
+            return ()
+
+        counter_indices: list[int] = []
+
+        for index in range(statistics.dlc):
+            values = [
+                payload[index]
+                for payload in statistics._payload_list
+                if len(payload) > index
+            ]
+
+            if len(values) < 2:
+                continue
+
+            if all(
+                (current - previous) % 256 == 1
+                for previous, current in pairwise(values)
+            ):
+                counter_indices.append(index)
+
+        return tuple(counter_indices)

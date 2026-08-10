@@ -188,3 +188,75 @@ def test_analyze_records_byte_activity() -> None:
         1,
         1,
     )
+
+
+def test_analyze_does_not_detect_non_sequential_byte_as_counter() -> None:
+    frames = [
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=b"\x10\x40\xa2",
+            timestamp=0.00,
+        ),
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=b"\x20\x40\xa2",
+            timestamp=0.01,
+        ),
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=b"\x30\x40\xa2",
+            timestamp=0.02,
+        ),
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=b"\x40\x40\xa2",
+            timestamp=0.03,
+        ),
+    ]
+
+    analyzer = CANTrafficAnalyzer()
+
+    result = analyzer.analyze(frames)
+
+    assert result[0x0F4].counter_byte_indices == ()
+
+
+def test_analyze_detects_counter_rollover() -> None:
+    frames = [
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=b"\xfc\x40\xa2",
+            timestamp=0.00,
+        ),
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=b"\xfd\x40\xa2",
+            timestamp=0.01,
+        ),
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=b"\xfe\x40\xa2",
+            timestamp=0.02,
+        ),
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=b"\xff\x40\xa2",
+            timestamp=0.03,
+        ),
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=b"\x00\x40\xa2",
+            timestamp=0.04,
+        ),
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=b"\x01\x40\xa2",
+            timestamp=0.05,
+        ),
+    ]
+
+    analyzer = CANTrafficAnalyzer()
+
+    result = analyzer.analyze(frames)
+
+    assert result[0x0F4].counter_byte_indices == (0,)
