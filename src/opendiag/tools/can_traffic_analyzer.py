@@ -12,12 +12,18 @@ class CANTrafficStatistics:
     unique_payloads: int = 0
     frequency_hz: float = 0.0
     period_ms: float = 0.0
+    byte_unique_values: tuple[int, ...] = ()
 
     _payloads: set[bytes] = field(
         default_factory=set,
         repr=False,
     )
     _payload_list: list[bytes] = field(
+        default_factory=list,
+        repr=False,
+    )
+
+    _byte_values: list[set[int]] = field(
         default_factory=list,
         repr=False,
     )
@@ -58,6 +64,16 @@ class CANTrafficAnalyzer:
 
             statistics.frame_count += 1
             statistics.dlc = frame.dlc
+
+            if not statistics._byte_values:
+                statistics._byte_values = [set() for _ in range(frame.dlc)]
+
+            for index, value in enumerate(frame.data):
+                statistics._byte_values[index].add(value)
+
+            statistics.byte_unique_values = tuple(
+                len(values) for values in statistics._byte_values
+            )
 
             if frame.data not in statistics._payloads:
                 statistics._payloads.add(frame.data)

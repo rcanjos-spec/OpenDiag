@@ -157,3 +157,34 @@ def test_analyze_calculates_period() -> None:
     result = analyzer.analyze(frames)
 
     assert result[0x0F4].period_ms == pytest.approx(100.0)
+
+
+def test_analyze_records_byte_activity() -> None:
+    frames = [
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=b"\x10\x20\x30\x40",
+            timestamp=0.00,
+        ),
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=b"\x10\x21\x30\x40",
+            timestamp=0.01,
+        ),
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=b"\x10\x22\x30\x40",
+            timestamp=0.02,
+        ),
+    ]
+
+    analyzer = CANTrafficAnalyzer()
+
+    result = analyzer.analyze(frames)
+
+    assert result[0x0F4].byte_unique_values == (
+        1,
+        3,
+        1,
+        1,
+    )
