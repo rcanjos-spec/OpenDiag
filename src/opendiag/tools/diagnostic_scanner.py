@@ -68,28 +68,56 @@ class DiagnosticScanner:
 
         return counts
 
+    def capture(
+        self,
+        duration: float,
+    ) -> list[CANFrame]:
+        """Capture CAN frames for a fixed duration."""
+
+        frames: list[CANFrame] = []
+        deadline = time.monotonic() + duration
+
+        while True:
+            remaining = deadline - time.monotonic()
+
+            if remaining <= 0:
+                break
+
+            frame = self.receive(
+                timeout=remaining,
+            )
+
+            if frame is None:
+                break
+
+            frames.append(frame)
+
+        return frames
+
     def request(
         self,
         frame: CANFrame,
         *,
         response_filter: Callable[[CANFrame], bool],
-        timeout: int = 3,
+        timeout: float = 3.0,
     ) -> CANFrame:
         """Send a request and wait for the expected response."""
 
         self.send(frame)
 
-        attempts = 0
+        deadline = time.monotonic() + timeout
 
         while True:
-            response = self.receive()
+            remaining = deadline - time.monotonic()
+
+            if remaining <= 0:
+                raise TimeoutError
+
+            response = self.receive(
+                timeout=remaining,
+            )
 
             if response is None:
-                attempts += 1
-
-                if attempts >= timeout:
-                    raise TimeoutError
-
                 continue
 
             if response_filter(response):

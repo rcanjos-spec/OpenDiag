@@ -90,11 +90,45 @@ class ISOTPFrame:
     ) -> CANFrame:
         """Convert an ISO-TP frame into a CAN frame."""
 
-        return CANFrame(
-            arbitration_id=arbitration_id,
-            data=bytes([self.length]) + self.payload,
-            timestamp=0.0,
-        )
+        if self.frame_type is FrameType.SINGLE:
+            pci = self.length & 0x0F
+            data = bytes([pci]) + self.payload
+            return CANFrame(
+                arbitration_id=arbitration_id,
+                data=data,
+                timestamp=0.0,
+            )
+
+        if self.frame_type is FrameType.FIRST:
+            if self.message_length is None:
+                raise ValueError("First Frame requires message_length")
+
+            pci_high = 0x10 | ((self.message_length >> 8) & 0x0F)
+            pci_low = self.message_length & 0xFF
+
+            data = bytes([pci_high, pci_low]) + self.payload
+
+            return CANFrame(
+                arbitration_id=arbitration_id,
+                data=data,
+                timestamp=0.0,
+            )
+
+        if self.frame_type is FrameType.CONSECUTIVE:
+            if self.sequence_number is None:
+                raise ValueError("Consecutive Frame requires sequence_number")
+
+            pci = 0x20 | (self.sequence_number & 0x0F)
+
+            data = bytes([pci]) + self.payload
+
+            return CANFrame(
+                arbitration_id=arbitration_id,
+                data=data,
+                timestamp=0.0,
+            )
+
+        raise NotImplementedError(f"Unsupported frame type: {self.frame_type}")
 
 
 @dataclass(slots=True)

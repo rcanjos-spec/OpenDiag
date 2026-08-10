@@ -35,7 +35,7 @@ def test_request_sends_and_receives() -> None:
     )
 
     bus.send.assert_called_once_with(request)
-    bus.receive.assert_called_once_with()
+    bus.receive.assert_called_once()
 
     assert received is response
 
@@ -56,30 +56,33 @@ def test_request_times_out() -> None:
         scanner.request(
             request,
             response_filter=arbitration_id_filter(0x7E8),
-            timeout=3,
+            timeout=0.02,
         )
 
-    def test_request_uses_filter() -> None:
-        request = CANFrame(
-            arbitration_id=0x7DF,
-            data=b"\x02\x3e\x00",
-            timestamp=0.0,
-        )
+    bus.send.assert_called_once_with(request)
 
-        response = CANFrame(
-            arbitration_id=0x7E8,
-            data=b"\x02\x7e\x00",
-            timestamp=0.0,
-        )
 
-        bus = Mock()
-        bus.receive.return_value = response
+def test_request_uses_filter() -> None:
+    request = CANFrame(
+        arbitration_id=0x7DF,
+        data=b"\x02\x3e\x00",
+        timestamp=0.0,
+    )
 
-        scanner = DiagnosticScanner(bus)
+    response = CANFrame(
+        arbitration_id=0x7E8,
+        data=b"\x02\x7e\x00",
+        timestamp=0.0,
+    )
 
-        received = scanner.request(
-            request,
-            response_filter=response_id_filter(0x7E8),
-        )
+    bus = Mock()
+    bus.receive.return_value = response
 
-        assert received is response
+    scanner = DiagnosticScanner(bus)
+
+    received = scanner.request(
+        request,
+        response_filter=response_id_filter(0x7E8),
+    )
+
+    assert received is response
