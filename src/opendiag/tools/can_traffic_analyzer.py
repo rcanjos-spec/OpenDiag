@@ -11,9 +11,14 @@ class CANTrafficStatistics:
     dlc: int = 0
     unique_payloads: int = 0
     frequency_hz: float = 0.0
+    period_ms: float = 0.0
 
     _payloads: set[bytes] = field(
         default_factory=set,
+        repr=False,
+    )
+    _payload_list: list[bytes] = field(
+        default_factory=list,
         repr=False,
     )
 
@@ -26,6 +31,12 @@ class CANTrafficStatistics:
         default=None,
         repr=False,
     )
+
+    @property
+    def payloads(self) -> tuple[bytes, ...]:
+        """Return unique observed payloads."""
+
+        return tuple(self._payload_list)
 
 
 class CANTrafficAnalyzer:
@@ -48,7 +59,10 @@ class CANTrafficAnalyzer:
             statistics.frame_count += 1
             statistics.dlc = frame.dlc
 
-            statistics._payloads.add(frame.data)
+            if frame.data not in statistics._payloads:
+                statistics._payloads.add(frame.data)
+                statistics._payload_list.append(frame.data)
+
             statistics.unique_payloads = len(
                 statistics._payloads,
             )
@@ -62,5 +76,7 @@ class CANTrafficAnalyzer:
 
             if elapsed > 0:
                 statistics.frequency_hz = (statistics.frame_count - 1) / elapsed
+
+                statistics.period_ms = 1000.0 / statistics.frequency_hz
 
         return result

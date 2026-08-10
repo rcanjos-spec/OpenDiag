@@ -102,3 +102,58 @@ def test_analyze_calculates_frequency() -> None:
     result = analyzer.analyze(frames)
 
     assert result[0x0F4].frequency_hz == pytest.approx(10.0)
+
+
+def test_analyze_records_payloads() -> None:
+    frames = [
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=b"\x01\x02",
+            timestamp=0.00,
+        ),
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=b"\x03\x04",
+            timestamp=0.01,
+        ),
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=b"\x01\x02",
+            timestamp=0.02,
+        ),
+    ]
+
+    analyzer = CANTrafficAnalyzer()
+
+    result = analyzer.analyze(frames)
+
+    assert result[0x0F4].payloads == (
+        b"\x01\x02",
+        b"\x03\x04",
+    )
+
+
+def test_analyze_calculates_period() -> None:
+    frames = [
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=b"\x01",
+            timestamp=10.0,
+        ),
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=b"\x01",
+            timestamp=10.1,
+        ),
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=b"\x01",
+            timestamp=10.2,
+        ),
+    ]
+
+    analyzer = CANTrafficAnalyzer()
+
+    result = analyzer.analyze(frames)
+
+    assert result[0x0F4].period_ms == pytest.approx(100.0)

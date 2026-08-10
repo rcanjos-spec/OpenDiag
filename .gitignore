@@ -35,3 +35,6 @@ Desktop.ini
 
 # Ruff
 .ruff_cache/
+
+# Codex pytest artifacts
+.codex-pytest/
