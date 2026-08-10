@@ -1,7 +1,10 @@
 import pytest
 
 from opendiag.core.can_frame import CANFrame
-from opendiag.tools.can_traffic_analyzer import CANTrafficAnalyzer
+from opendiag.tools.can_traffic_analyzer import (
+    CANCounterAnalysis,
+    CANTrafficAnalyzer,
+)
 
 
 def test_analyze_groups_frames_by_arbitration_id() -> None:
@@ -260,3 +263,124 @@ def test_analyze_detects_counter_rollover() -> None:
     result = analyzer.analyze(frames)
 
     assert result[0x0F4].counter_byte_indices == (0,)
+
+
+def test_analyze_describes_counter_properties() -> None:
+    frames = [
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=b"\xfc\x40\xa2",
+            timestamp=0.00,
+        ),
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=b"\xfd\x40\xa2",
+            timestamp=0.01,
+        ),
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=b"\xfe\x40\xa2",
+            timestamp=0.02,
+        ),
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=b"\xff\x40\xa2",
+            timestamp=0.03,
+        ),
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=b"\x00\x40\xa2",
+            timestamp=0.04,
+        ),
+    ]
+
+    analyzer = CANTrafficAnalyzer()
+
+    result = analyzer.analyze(frames)
+
+    assert result[0x0F4].counter_analysis == (
+        CANCounterAnalysis(
+            byte_index=0,
+            step=1,
+            rollover=True,
+        ),
+    )
+
+
+def test_analyze_describes_counter_without_rollover() -> None:
+    frames = [
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=b"\x00\x40\xa2",
+            timestamp=0.00,
+        ),
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=b"\x01\x40\xa2",
+            timestamp=0.01,
+        ),
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=b"\x02\x40\xa2",
+            timestamp=0.02,
+        ),
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=b"\x03\x40\xa2",
+            timestamp=0.03,
+        ),
+    ]
+
+    analyzer = CANTrafficAnalyzer()
+
+    result = analyzer.analyze(frames)
+
+    assert result[0x0F4].counter_analysis == (
+        CANCounterAnalysis(
+            byte_index=0,
+            step=1,
+            rollover=False,
+        ),
+    )
+
+
+def test_analyze_describes_multiple_counter_bytes() -> None:
+    frames = [
+        CANFrame(
+            arbitration_id=0x200,
+            data=b"\x00\x10\xff\x05",
+            timestamp=0.00,
+        ),
+        CANFrame(
+            arbitration_id=0x200,
+            data=b"\x01\x20\xff\x06",
+            timestamp=0.01,
+        ),
+        CANFrame(
+            arbitration_id=0x200,
+            data=b"\x02\x30\xff\x07",
+            timestamp=0.02,
+        ),
+        CANFrame(
+            arbitration_id=0x200,
+            data=b"\x03\x40\xff\x08",
+            timestamp=0.03,
+        ),
+    ]
+
+    analyzer = CANTrafficAnalyzer()
+
+    result = analyzer.analyze(frames)
+
+    assert result[0x200].counter_analysis == (
+        CANCounterAnalysis(
+            byte_index=0,
+            step=1,
+            rollover=False,
+        ),
+        CANCounterAnalysis(
+            byte_index=3,
+            step=1,
+            rollover=False,
+        ),
+    )

@@ -15,6 +15,7 @@ class CANTrafficStatistics:
     period_ms: float = 0.0
     byte_unique_values: tuple[int, ...] = ()
     counter_byte_indices: tuple[int, ...] = ()
+    counter_analysis: tuple[CANCounterAnalysis, ...] = ()
 
     _payloads: set[bytes] = field(
         default_factory=set,
@@ -45,6 +46,15 @@ class CANTrafficStatistics:
         """Return unique observed payloads."""
 
         return tuple(self._payload_list)
+
+
+@dataclass(frozen=True, slots=True)
+class CANCounterAnalysis:
+    """Describe a detected CAN counter byte."""
+
+    byte_index: int
+    step: int
+    rollover: bool
 
 
 class CANTrafficAnalyzer:
@@ -97,12 +107,41 @@ class CANTrafficAnalyzer:
 
                 statistics.period_ms = 1000.0 / statistics.frequency_hz
 
-        for statistics in result.values():
-            statistics.counter_byte_indices = self._detect_counter_bytes(
-                statistics,
-            )
+            for statistics in result.values():
+                statistics.counter_byte_indices = self._detect_counter_bytes(
+                    statistics,
+                )
+                statistics.counter_analysis = tuple(
+                    CANCounterAnalysis(
+                        byte_index=index,
+                        step=1,
+                        rollover=self._has_counter_rollover(
+                            statistics,
+                            index,
+                        ),
+                    )
+                    for index in statistics.counter_byte_indices
+                )
 
         return result
+
+    @staticmethod
+    def _has_counter_rollover(
+        statistics: CANTrafficStatistics,
+        byte_index: int,
+    ) -> bool:
+        """Return whether a counter byte wraps from 0xFF to 0x00."""
+
+        values = [
+            payload[byte_index]
+            for payload in statistics._payload_list
+            if len(payload) > byte_index
+        ]
+
+        return any(
+            previous == 0xFF and current == 0x00
+            for previous, current in pairwise(values)
+        )
 
     @staticmethod
     def _detect_counter_bytes(
