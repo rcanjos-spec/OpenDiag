@@ -3,6 +3,7 @@ import pytest
 from opendiag.core.can_frame import CANFrame
 from opendiag.tools.can_traffic_analyzer import (
     CANCounterAnalysis,
+    CANIntegrityAnalysis,
     CANTrafficAnalyzer,
 )
 
@@ -650,5 +651,262 @@ def test_analyze_detects_counter_within_payload_state() -> None:
                 modulus=16,
                 rollover=True,
             ),
+        ),
+    )
+
+
+def test_detects_crc8_sae_j1850() -> None:
+    frames = [
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=bytes.fromhex("35 21 FF E0 00 00 1C D3"),
+            timestamp=0.00,
+        ),
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=bytes.fromhex("35 21 FF E0 00 00 1D CE"),
+            timestamp=0.01,
+        ),
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=bytes.fromhex("35 21 FF E0 00 00 1E E9"),
+            timestamp=0.02,
+        ),
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=bytes.fromhex("35 21 FF E0 00 00 1F F4"),
+            timestamp=0.03,
+        ),
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=bytes.fromhex("35 21 FF E0 00 00 10 4F"),
+            timestamp=0.04,
+        ),
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=bytes.fromhex("35 21 FF E0 00 00 11 52"),
+            timestamp=0.05,
+        ),
+    ]
+
+    analyzer = CANTrafficAnalyzer()
+    result = analyzer.analyze(frames)
+
+    integrity = result[0x0F4].integrity_analysis
+
+    assert len(integrity) == 1
+    assert integrity[0] == CANIntegrityAnalysis(
+        byte_index=7,
+        algorithm="CRC-8/SAE-J1850",
+        protected_start=0,
+        protected_end=6,
+        polynomial=0x1D,
+        init=0xFF,
+        xorout=0xFF,
+        matches=6,
+        total_frames=6,
+    )
+
+
+@pytest.mark.parametrize(
+    ("arbitration_id", "payloads"),
+    [
+        (
+            0x0FB,
+            [
+                "00 FF FF F7 FA 00 01 4C",
+                "00 FF FF F7 FA 00 04 25",
+                "00 FF FF F7 FA 00 05 38",
+                "00 FF FF F7 FA 00 06 1F",
+                "00 FF FF F7 FA 00 07 02",
+                "00 FF FF F7 FA 00 08 B9",
+                "00 FF FF F7 FA 00 09 A4",
+                "00 FF FF F7 FA 00 0A 83",
+                "00 FF FF F7 FA 00 0B 9E",
+                "00 FF FF F7 FA 00 0C CD",
+                "00 FF FF F7 FA 00 0D D0",
+                "00 FF FF F7 FA 00 0E F7",
+                "00 FF FF F7 FA 00 0F EA",
+                "00 FF FF F7 FA 00 00 51",
+                "00 FF FF F7 FA 00 02 6B",
+                "00 FF FF F7 FA 00 03 76",
+            ],
+        ),
+        (
+            0x0FC,
+            [
+                "00 00 9F F0 00 00 01 68",
+                "00 00 9F F0 00 00 04 01",
+                "00 00 9F F0 00 00 05 1C",
+                "00 00 9F F0 00 00 06 3B",
+                "00 00 9F F0 00 00 07 26",
+                "00 00 9F F0 00 00 08 9D",
+                "00 00 9F F0 00 00 09 80",
+                "00 00 9F F0 00 00 0A A7",
+                "00 00 9F F0 00 00 0B BA",
+                "00 00 9F F0 00 00 0C E9",
+                "00 00 9F F0 00 00 0D F4",
+                "00 00 9F F0 00 00 0E D3",
+                "00 00 9F F0 00 00 0F CE",
+                "00 00 9F F0 00 00 00 75",
+                "00 00 9F F0 00 00 02 4F",
+                "00 00 9F F0 00 00 03 52",
+            ],
+        ),
+        (
+            0x0FF,
+            [
+                "08 FF F3 E6 7C C0 01 02",
+                "08 FF F3 E6 7C C0 04 6B",
+                "08 FF F3 E6 7C C0 05 76",
+                "08 FF F3 E6 7C C0 06 51",
+                "08 FF F3 E6 7C C0 07 4C",
+                "08 FF F3 E6 7C C0 08 F7",
+                "08 FF F3 E6 7C C0 09 EA",
+                "08 FF F3 E6 7C C0 0A CD",
+                "08 FF F3 E6 7C C0 0B D0",
+                "08 FF F3 E6 7C C0 0C 83",
+                "08 FF F3 E6 7C C0 0D 9E",
+                "08 FF F3 E6 7C C0 0E B9",
+                "08 FF F3 E6 7C C0 0F A4",
+                "08 FF F3 E6 7C C0 00 1F",
+                "08 FF F3 E6 7C C0 02 25",
+                "08 FF F3 E6 7C C0 03 38",
+            ],
+        ),
+        (
+            0x100,
+            [
+                "BF F9 F3 3E 7C 00 21 CE",
+                "BF F9 F3 3E 7C 00 23 F4",
+                "BF F9 F3 3E 7C 00 24 A7",
+                "BF F9 F3 3E 7C 00 25 BA",
+                "BF F9 F3 3E 7C 00 26 9D",
+                "BF F9 F3 3E 7C 00 27 80",
+                "BF F9 F3 3E 7C 00 28 3B",
+                "BF F9 F3 3E 7C 00 29 26",
+                "BF F9 F3 3E 7C 00 2A 01",
+                "BF F9 F3 3E 7C 00 2B 1C",
+                "BF F9 F3 3E 7C 00 2C 4F",
+                "BF F9 F3 3E 7C 00 2D 52",
+                "BF F9 F3 3E 7C 00 2E 75",
+                "BF F9 F3 3E 7C 00 2F 68",
+                "BF F9 F3 3E 7C 00 20 D3",
+                "BF F9 F3 3E 7C 00 22 E9",
+            ],
+        ),
+        (
+            0x1F4,
+            [
+                "00 00 01 C0 00 00 07 92",
+                "00 00 01 C0 00 00 04 B5",
+                "00 00 01 C0 00 00 05 A8",
+                "00 00 01 C0 00 00 06 8F",
+                "00 00 01 C0 00 00 08 29",
+                "00 00 01 C0 00 00 09 34",
+                "00 00 01 C0 00 00 0A 13",
+                "00 00 01 C0 00 00 0B 0E",
+                "00 00 01 C0 00 00 0C 5D",
+                "00 00 01 C0 00 00 0D 40",
+                "00 00 01 C0 00 00 0E 67",
+                "00 00 01 C0 00 00 0F 7A",
+                "00 00 01 C0 00 00 00 C1",
+                "00 00 01 C0 00 00 01 DC",
+                "00 00 01 C0 00 00 02 FB",
+                "00 00 01 C0 00 00 03 E6",
+            ],
+        ),
+    ],
+)
+def test_detects_crc8_sae_j1850_for_multiple_ids(
+    arbitration_id: int,
+    payloads: list[str],
+) -> None:
+    frames = [
+        CANFrame(
+            arbitration_id=arbitration_id,
+            data=bytes.fromhex(payload),
+            timestamp=index * 0.01,
+        )
+        for index, payload in enumerate(payloads)
+    ]
+
+    analyzer = CANTrafficAnalyzer()
+    result = analyzer.analyze(frames)
+
+    assert result[arbitration_id].integrity_analysis == (
+        CANIntegrityAnalysis(
+            byte_index=7,
+            algorithm="CRC-8/SAE-J1850",
+            protected_start=0,
+            protected_end=6,
+            polynomial=0x1D,
+            init=0xFF,
+            xorout=0xFF,
+            matches=16,
+            total_frames=16,
+        ),
+    )
+
+
+def test_analyze_detects_counter_and_crc8_together() -> None:
+    frames = [
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=b"\x35\x21\xff\xe0\x00\x00\x1c\xd3",
+            timestamp=0.00,
+        ),
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=b"\x35\x21\xff\xe0\x00\x00\x1d\xce",
+            timestamp=0.01,
+        ),
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=b"\x35\x21\xff\xe0\x00\x00\x1e\xe9",
+            timestamp=0.02,
+        ),
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=b"\x35\x21\xff\xe0\x00\x00\x1f\xf4",
+            timestamp=0.03,
+        ),
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=b"\x35\x21\xff\xe0\x00\x00\x10\x4f",
+            timestamp=0.04,
+        ),
+        CANFrame(
+            arbitration_id=0x0F4,
+            data=b"\x35\x21\xff\xe0\x00\x00\x11\x52",
+            timestamp=0.05,
+        ),
+    ]
+
+    result = CANTrafficAnalyzer().analyze(frames)
+    statistics = result[0x0F4]
+
+    assert statistics.counter_analysis == (
+        CANCounterAnalysis(
+            byte_index=6,
+            bit_offset=0,
+            width=4,
+            step=1,
+            modulus=16,
+            rollover=True,
+        ),
+    )
+
+    assert statistics.integrity_analysis == (
+        CANIntegrityAnalysis(
+            byte_index=7,
+            algorithm="CRC-8/SAE-J1850",
+            protected_start=0,
+            protected_end=6,
+            polynomial=0x1D,
+            init=0xFF,
+            xorout=0xFF,
+            matches=6,
+            total_frames=6,
         ),
     )

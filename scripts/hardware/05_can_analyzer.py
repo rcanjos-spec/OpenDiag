@@ -79,6 +79,23 @@ def main() -> None:
                         f"rollover {'YES' if counter.rollover else 'NO'}"
                     )
 
+            if stats.integrity_analysis:
+                print("  Integrity analysis:")
+
+                for integrity in stats.integrity_analysis:
+                    print(
+                        f"    byte {integrity.byte_index} | "
+                        f"algorithm {integrity.algorithm} | "
+                        f"protected bytes "
+                        f"{integrity.protected_start}-"
+                        f"{integrity.protected_end} | "
+                        f"polynomial 0x{integrity.polynomial:02X} | "
+                        f"init 0x{integrity.init:02X} | "
+                        f"xorout 0x{integrity.xorout:02X} | "
+                        f"matches "
+                        f"{integrity.matches}/{integrity.total_frames}"
+                    )
+
             if stats.payload_states:
                 print("  Payload states:")
 
