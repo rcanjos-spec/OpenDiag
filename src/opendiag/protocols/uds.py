@@ -1,3 +1,4 @@
+import time
 from dataclasses import dataclass
 
 
@@ -117,18 +118,29 @@ class UDSClient:
 
         return self.request_positive(request)
 
-    def receive(self) -> bytes:
+    def receive(self, timeout: float | None = None) -> bytes:
         """Receive a UDS response from the transport."""
 
-        return self._transport.receive()
+        return self._transport.receive(timeout=timeout)
 
-    def request_positive(self, request: bytes) -> bytes:
-        """Send a UDS request and reject negative responses."""
+    def request_positive(
+        self,
+        request: bytes,
+        timeout: float = 1.0,
+    ) -> bytes:
+        """Send a UDS request and wait for a positive response."""
 
         self._transport.send(request)
 
+        deadline = time.monotonic() + timeout
+
         while True:
-            response = self.receive()
+            remaining = deadline - time.monotonic()
+
+            if remaining <= 0:
+                raise TimeoutError("UDS response pending timeout")
+
+            response = self.receive(timeout=remaining)
 
             if response and response[0] == 0x7F:
                 negative = self.parse_negative_response(response)

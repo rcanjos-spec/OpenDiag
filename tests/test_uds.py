@@ -51,7 +51,8 @@ def test_uds_client_reads_data_by_identifier() -> None:
         bytes.fromhex("22 F1 90"),
     )
 
-    transport.receive.assert_called_once_with()
+    transport.receive.assert_called_once()
+    assert "timeout" in transport.receive.call_args.kwargs
 
 
 def test_uds_client_reads_vin() -> None:
@@ -120,24 +121,6 @@ def test_uds_negative_response_has_nrc_description() -> None:
     response = UDSClient.parse_negative_response(bytes.fromhex("7F 10 12"))
 
     assert response.nrc_description == "SubFunctionNotSupported"
-
-
-def test_uds_client_request_positive_response() -> None:
-    transport = Mock()
-
-    transport.receive.return_value = bytes.fromhex("50 01 00 32 01 F4")
-
-    client = UDSClient(transport=transport)
-
-    response = client.request_positive(
-        bytes.fromhex("10 01"),
-    )
-
-    assert response == bytes.fromhex("50 01 00 32 01 F4")
-
-    transport.send.assert_called_once_with(
-        bytes.fromhex("10 01"),
-    )
 
 
 def test_uds_client_request_positive_rejects_negative_response() -> None:
@@ -209,3 +192,42 @@ def test_uds_client_request_positive_ignores_response_pending() -> None:
     assert response == bytes.fromhex("50 01 00 32 01 F4")
 
     assert transport.receive.call_count == 2
+
+
+def test_uds_client_request_positive_times_out_on_response_pending() -> None:
+    transport = Mock()
+
+    transport.receive.return_value = bytes.fromhex("7F 10 78")
+
+    client = UDSClient(transport=transport)
+
+    with pytest.raises(TimeoutError, match="UDS response pending timeout"):
+        client.request_positive(
+            bytes.fromhex("10 01"),
+            timeout=0.01,
+        )
+
+
+def test_uds_client_request_positive_response() -> None:
+    transport = Mock()
+
+    transport.receive.return_value = bytes.fromhex("50 01 00 32 01 F4")
+
+    client = UDSClient(transport=transport)
+
+    response = client.request_positive(
+        bytes.fromhex("10 01"),
+    )
+
+    assert response == bytes.fromhex("50 01 00 32 01 F4")
+
+    transport.send.assert_called_once_with(
+        bytes.fromhex("10 01"),
+    )
+
+    transport.receive.assert_called_once()
+
+    timeout = transport.receive.call_args.kwargs["timeout"]
+
+    assert timeout > 0
+    assert timeout <= 1.0
