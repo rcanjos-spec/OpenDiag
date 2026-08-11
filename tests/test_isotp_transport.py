@@ -35,7 +35,7 @@ def test_transport_sends_data_to_bus() -> None:
     frame = bus.send.call_args.args[0]
 
     assert isinstance(frame, CANFrame)
-    assert frame.data == b"\x02\x3e\x00"
+    assert frame.data == b"\x02\x3e\x00\x00\x00\x00\x00\x00"
     assert frame.arbitration_id == 0x7E0
 
 
@@ -181,7 +181,7 @@ def test_transport_sends_extended_can_frame() -> None:
     frame = bus.send.call_args.args[0]
 
     assert frame.arbitration_id == 0x18DB33F1
-    assert frame.data == b"\x02\x09\x02"
+    assert frame.data == b"\x02\x09\x02\x00\x00\x00\x00\x00"
     assert frame.is_extended_id is True
 
 
@@ -200,7 +200,7 @@ def test_transport_builds_extended_obd_request() -> None:
 
     assert frame.arbitration_id == 0x18DB33F1
     assert frame.is_extended_id is True
-    assert frame.data == b"\x02\x09\x02"
+    assert frame.data == b"\x02\x09\x02\x00\x00\x00\x00\x00"
 
 
 def test_transport_receives_only_from_configured_rx_id() -> None:
@@ -209,13 +209,13 @@ def test_transport_receives_only_from_configured_rx_id() -> None:
     bus.receive.side_effect = [
         CANFrame(
             arbitration_id=0x18DA10F1,
-            data=bytes.fromhex("02 7E 00"),
+            data=bytes.fromhex("02 7E  00 00 00 00 00 00"),
             timestamp=0.0,
             is_extended_id=True,
         ),
         CANFrame(
             arbitration_id=0x18DAF110,
-            data=bytes.fromhex("02 7E 00"),
+            data=bytes.fromhex("02 7E  00 00 00 00 00 00"),
             timestamp=0.1,
             is_extended_id=True,
         ),
@@ -273,7 +273,7 @@ def test_transport_sends_flow_control_for_first_frame() -> None:
 
     assert flow_control.arbitration_id == 0x18DB33F1
     assert flow_control.is_extended_id is True
-    assert flow_control.data == bytes.fromhex("30 00 00")
+    assert flow_control.data == bytes.fromhex("30 00 00 00 00 00 00 00")
 
 
 def test_transport_receive_timeout() -> None:
@@ -295,7 +295,7 @@ def test_transport_receive_timeout_is_total() -> None:
 
     bus.receive.side_effect = lambda timeout=None: CANFrame(
         arbitration_id=0x0F4,
-        data=b"\x02\x7e\x00",
+        data=b"\x02\x09\x02\x00\x00\x00\x00\x00",
         timestamp=0.0,
     )
 

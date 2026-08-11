@@ -137,8 +137,8 @@ def test_obd_client_reads_vin_from_extended_addressed_transport() -> None:
 
     assert request_frame.arbitration_id == 0x18DB33F1
     assert request_frame.is_extended_id is True
-    assert request_frame.data == bytes.fromhex("02 09 02")
+    assert request_frame.data == bytes.fromhex("02 09 02 00 00 00 00 00")
 
     assert flow_control_frame.arbitration_id == 0x18DB33F1
     assert flow_control_frame.is_extended_id is True
-    assert flow_control_frame.data == bytes.fromhex("30 00 00")
+    assert flow_control_frame.data == bytes.fromhex("30 00 00 00 00 00 00 00")

@@ -94,6 +94,7 @@ class ISOTPFrame:
         if self.frame_type is FrameType.SINGLE:
             pci = self.length & 0x0F
             data = bytes([pci]) + self.payload
+            data = data.ljust(8, b"\x00")
             return CANFrame(
                 arbitration_id=arbitration_id,
                 data=data,

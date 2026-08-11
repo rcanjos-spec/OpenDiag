@@ -13,7 +13,7 @@ def test_isotp_frame_to_can_frame() -> None:
 
     assert isinstance(can_frame, CANFrame)
     assert can_frame.arbitration_id == 0x7E0
-    assert can_frame.data == b"\x02\x3e\x00"
+    assert can_frame.data == b"\x02\x3e\x00\x00\x00\x00\x00\x00"
 
 
 def test_first_frame_to_can_frame() -> None:
@@ -42,5 +42,5 @@ def test_to_can_frame_preserves_extended_id() -> None:
     )
 
     assert can_frame.arbitration_id == 0x18DB33F1
-    assert can_frame.data == b"\x02\x09\x02"
+    assert can_frame.data == b"\x02\x09\x02\x00\x00\x00\x00\x00"
     assert can_frame.is_extended_id is True

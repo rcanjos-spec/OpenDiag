@@ -22,6 +22,7 @@ class ISOTPTransport:
         tx_id: int = 0x7E0,
         tx_extended: bool = False,
         rx_id: int | None = None,
+        flow_control_id: int | None = None,
     ) -> None:
         self._bus = bus
         self._scanner = scanner
@@ -30,6 +31,9 @@ class ISOTPTransport:
         self._tx_id = tx_id
         self._tx_extended = tx_extended
         self._rx_id = rx_id
+        self._flow_control_id = (
+            flow_control_id if flow_control_id is not None else tx_id
+        )
 
     def send(
         self,
@@ -87,8 +91,8 @@ class ISOTPTransport:
 
             if frame.frame_type is FrameType.FIRST:
                 flow_control = CANFrame(
-                    arbitration_id=self._tx_id,
-                    data=bytes.fromhex("30 00 00"),
+                    arbitration_id=self._flow_control_id,
+                    data=bytes.fromhex("30 00 00 00 00 00 00 00"),
                     timestamp=0.0,
                     is_extended_id=self._tx_extended,
                 )
