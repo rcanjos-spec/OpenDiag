@@ -63,3 +63,19 @@ def test_uds_client_reads_vin() -> None:
     transport.send.assert_called_once_with(
         bytes.fromhex("22 F1 90"),
     )
+
+
+def test_uds_client_starts_default_session() -> None:
+    transport = Mock()
+
+    transport.receive.return_value = bytes.fromhex("50 01 00 32 01 F4")
+
+    client = UDSClient(transport=transport)
+
+    response = client.start_diagnostic_session(0x01)
+
+    assert response == bytes.fromhex("50 01 00 32 01 F4")
+
+    transport.send.assert_called_once_with(
+        bytes.fromhex("10 01"),
+    )

@@ -41,3 +41,15 @@ class UDSClient:
             return vin_bytes.decode("ascii")
         except UnicodeDecodeError as exc:
             raise ValueError("VIN must contain ASCII characters") from exc
+
+    def start_diagnostic_session(self, session: int) -> bytes:
+        """Start a UDS diagnostic session."""
+
+        request = bytes(
+            (
+                0x10,
+                session & 0xFF,
+            )
+        )
+
+        return self.request(request)
