@@ -47,3 +47,19 @@ def test_uds_client_reads_data_by_identifier() -> None:
     )
 
     transport.receive.assert_called_once_with()
+
+
+def test_uds_client_reads_vin() -> None:
+    transport = Mock()
+
+    transport.receive.return_value = bytes.fromhex(
+        "62 F1 90 39 42 44 33 35 38 41 43 47 53 59 4E 34 34 35 30 30"
+    )
+
+    client = UDSClient(transport=transport)
+
+    assert client.read_vin() == "9BD358ACGSYN44500"
+
+    transport.send.assert_called_once_with(
+        bytes.fromhex("22 F1 90"),
+    )
