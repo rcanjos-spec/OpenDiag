@@ -2,7 +2,10 @@ from unittest.mock import Mock
 
 import pytest
 
-from opendiag.protocols.uds import UDSClient
+from opendiag.protocols.uds import (
+    UDSClient,
+    UDSNegativeResponseError,
+)
 
 
 def test_uds_client_sends_request_and_returns_response() -> None:
@@ -170,3 +173,20 @@ def test_uds_client_rejects_negative_read_data_by_identifier() -> None:
 
     with pytest.raises(ValueError, match="Negative UDS response"):
         client.read_data_by_identifier(0xF190)
+
+
+def test_uds_negative_response_raises_uds_error() -> None:
+    transport = Mock()
+
+    transport.receive.return_value = bytes.fromhex("7F 22 31")
+
+    client = UDSClient(transport=transport)
+
+    with pytest.raises(UDSNegativeResponseError) as exc_info:
+        client.request_positive(bytes.fromhex("22 F1 90"))
+
+    error = exc_info.value
+
+    assert error.service_id == 0x22
+    assert error.nrc == 0x31
+    assert error.nrc_description == "RequestOutOfRange"

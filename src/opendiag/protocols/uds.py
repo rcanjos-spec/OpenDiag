@@ -30,6 +30,25 @@ class UDSNegativeResponse:
         )
 
 
+class UDSNegativeResponseError(ValueError):
+    """Raised when the ECU returns a UDS negative response."""
+
+    def __init__(
+        self,
+        response: UDSNegativeResponse,
+    ) -> None:
+        self.service_id = response.service_id
+        self.nrc = response.nrc
+        self.nrc_description = response.nrc_description
+
+        super().__init__(
+            f"Negative UDS response: "
+            f"service=0x{self.service_id:02X}, "
+            f"nrc=0x{self.nrc:02X} "
+            f"({self.nrc_description})"
+        )
+
+
 class UDSClient:
     """Basic UDS client over an ISO-TP transport."""
 
@@ -106,11 +125,6 @@ class UDSClient:
         if response and response[0] == 0x7F:
             negative = self.parse_negative_response(response)
 
-            raise ValueError(
-                f"Negative UDS response: "
-                f"service=0x{negative.service_id:02X}, "
-                f"nrc=0x{negative.nrc:02X} "
-                f"({negative.nrc_description})"
-            )
+            raise UDSNegativeResponseError(negative)
 
         return response
