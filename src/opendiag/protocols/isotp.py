@@ -190,9 +190,6 @@ class ISOTPReassembler:
 
             self._next_sequence = (self._next_sequence + 1) & 0x0F
 
-            if self._next_sequence == 0:
-                self._next_sequence = 1
-
             if len(self._buffer) >= self._expected_length:
                 payload = self._buffer[: self._expected_length]
 

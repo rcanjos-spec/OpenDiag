@@ -19,6 +19,7 @@ class ISOTPTransport:
         scanner=None,
         segmenter=None,
         reassembler=None,
+        reassembly_timeout: float = 5.0,
         tx_id: int = 0x7E0,
         tx_extended: bool = False,
         rx_id: int | None = None,

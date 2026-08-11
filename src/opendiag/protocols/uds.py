@@ -160,13 +160,19 @@ class UDSClient:
 
             return response
 
-    def read_dtc_information(self, subfunction: int) -> list[UDSDTC]:
+    def read_dtc_information(
+        self,
+        subfunction: int,
+        *,
+        status_mask: int = 0xFF,
+    ) -> list[UDSDTC]:
         """Read diagnostic trouble code information."""
 
         request = bytes(
             (
                 0x19,
                 subfunction & 0xFF,
+                status_mask & 0xFF,
             )
         )
 
@@ -181,7 +187,16 @@ class UDSClient:
         if len(response) < 2 or response[:2] != bytes.fromhex("59 02"):
             raise ValueError("Invalid UDS DTC response")
 
-        payload = response[2:]
+        # ECU reports no DTCs.
+        if len(response) == 2:
+            return []
+
+        status_availability_mask = response[2]
+
+        # Keep the response-level mask for future API expansion.
+        _ = status_availability_mask
+
+        payload = response[3:]
 
         if len(payload) % 4 != 0:
             raise ValueError("Invalid UDS DTC response")

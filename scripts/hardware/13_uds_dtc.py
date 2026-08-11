@@ -1,0 +1,49 @@
+from opendiag.bus.python_can import PythonCANBus
+from opendiag.protocols.isotp_transport import ISOTPTransport
+from opendiag.protocols.uds import UDSClient
+
+bus = PythonCANBus(
+    interface="slcan",
+    channel="COM6",
+    bitrate=500000,
+)
+
+try:
+    transport = ISOTPTransport(
+        bus=bus,
+        tx_id=0x18DA10F1,
+        tx_extended=True,
+        rx_id=0x18DAF110,
+        flow_control_id=0x18DA10F1,
+        reassembly_timeout=5.0,
+    )
+
+    client = UDSClient(transport=transport)
+
+    print("## OpenDiag - UDS DTC Reader")
+    print()
+    print("Interface : COM6")
+    print("Bitrate   : 500000")
+    print("TX ID     : 18DA10F1")
+    print("RX ID     : 18DAF110")
+    print("FC ID     : 18DA10F1")
+    print()
+    print("Solicitando DTCs...")
+    print()
+
+    dtcs = client.read_dtc_information(
+        0x02,
+        status_mask=0xFF,
+    )
+
+    if not dtcs:
+        print("Nenhum DTC encontrado.")
+    else:
+        print(f"DTCs encontrados: {len(dtcs)}")
+        print()
+
+        for index, dtc in enumerate(dtcs, start=1):
+            print(f"{index:02d}. DTC=0x{dtc.code:06X} STATUS=0x{dtc.status:02X}")
+
+finally:
+    bus.shutdown()
