@@ -10,3 +10,16 @@ class UDSClient:
         self._transport.send(request)
 
         return self._transport.receive()
+
+    def read_data_by_identifier(self, identifier: int) -> bytes:
+        """Read data identified by a UDS data identifier."""
+
+        request = bytes(
+            (
+                0x22,
+                (identifier >> 8) & 0xFF,
+                identifier & 0xFF,
+            )
+        )
+
+        return self.request(request)

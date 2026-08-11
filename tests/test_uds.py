@@ -25,3 +25,25 @@ def test_uds_client_sends_request_and_returns_response() -> None:
     )
 
     transport.receive.assert_called_once_with()
+
+
+def test_uds_client_reads_data_by_identifier() -> None:
+    transport = Mock()
+
+    transport.receive.return_value = bytes.fromhex(
+        "62 F1 90 39 42 44 33 35 38 41 43 47 53 59 4E 34 34 35 30 30"
+    )
+
+    client = UDSClient(transport=transport)
+
+    response = client.read_data_by_identifier(0xF190)
+
+    assert response == bytes.fromhex(
+        "62 F1 90 39 42 44 33 35 38 41 43 47 53 59 4E 34 34 35 30 30"
+    )
+
+    transport.send.assert_called_once_with(
+        bytes.fromhex("22 F1 90"),
+    )
+
+    transport.receive.assert_called_once_with()
