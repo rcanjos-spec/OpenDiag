@@ -50,6 +50,14 @@ class UDSNegativeResponseError(ValueError):
         )
 
 
+@dataclass(frozen=True, slots=True)
+class UDSDTC:
+    """Represents a UDS diagnostic trouble code."""
+
+    code: int
+    status: int
+
+
 class UDSClient:
     """Basic UDS client over an ISO-TP transport."""
 
@@ -151,3 +159,47 @@ class UDSClient:
                 raise UDSNegativeResponseError(negative)
 
             return response
+
+    def read_dtc_information(self, subfunction: int) -> list[UDSDTC]:
+        """Read diagnostic trouble code information."""
+
+        request = bytes(
+            (
+                0x19,
+                subfunction & 0xFF,
+            )
+        )
+
+        response = self.request_positive(request)
+
+        return self.parse_dtc_information(response)
+
+    @staticmethod
+    def parse_dtc_information(response: bytes) -> list[UDSDTC]:
+        """Parse a UDS ReadDTCInformation response."""
+
+        if len(response) < 2 or response[:2] != bytes.fromhex("59 02"):
+            raise ValueError("Invalid UDS DTC response")
+
+        payload = response[2:]
+
+        if len(payload) % 4 != 0:
+            raise ValueError("Invalid UDS DTC response")
+
+        dtcs = []
+
+        for offset in range(0, len(payload), 4):
+            code = int.from_bytes(
+                payload[offset : offset + 3],
+                byteorder="big",
+            )
+            status = payload[offset + 3]
+
+            dtcs.append(
+                UDSDTC(
+                    code=code,
+                    status=status,
+                )
+            )
+
+        return dtcs

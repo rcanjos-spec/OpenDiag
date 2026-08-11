@@ -231,3 +231,77 @@ def test_uds_client_request_positive_response() -> None:
 
     assert timeout > 0
     assert timeout <= 1.0
+
+
+def test_uds_client_reads_dtc_information() -> None:
+    transport = Mock()
+
+    transport.receive.return_value = bytes.fromhex("59 02 01 23 45 67")
+
+    client = UDSClient(transport=transport)
+
+    dtcs = client.read_dtc_information(0x02)
+
+    assert len(dtcs) == 1
+    assert dtcs[0].code == 0x012345
+    assert dtcs[0].status == 0x67
+
+    transport.send.assert_called_once_with(
+        bytes.fromhex("19 02"),
+    )
+
+
+def test_uds_client_rejects_negative_dtc_information() -> None:
+    transport = Mock()
+
+    transport.receive.return_value = bytes.fromhex("7F 19 12")
+
+    client = UDSClient(transport=transport)
+
+    with pytest.raises(UDSNegativeResponseError) as exc_info:
+        client.read_dtc_information(0x02)
+
+    error = exc_info.value
+
+    assert error.service_id == 0x19
+    assert error.nrc == 0x12
+    assert error.nrc_description == "SubFunctionNotSupported"
+
+
+def test_uds_client_parses_dtc_information() -> None:
+    response = bytes.fromhex("59 02 01 23 45 67")
+
+    dtcs = UDSClient.parse_dtc_information(response)
+
+    assert len(dtcs) == 1
+    assert dtcs[0].code == 0x012345
+    assert dtcs[0].status == 0x67
+
+
+def test_uds_client_rejects_invalid_dtc_information() -> None:
+    response = bytes.fromhex("59 02 01 23")
+
+    with pytest.raises(ValueError, match="Invalid UDS DTC response"):
+        UDSClient.parse_dtc_information(response)
+
+
+def test_uds_client_parses_multiple_dtcs() -> None:
+    response = bytes.fromhex("59 02 01 23 45 67 06 78 9A 80")
+
+    dtcs = UDSClient.parse_dtc_information(response)
+
+    assert len(dtcs) == 2
+
+    assert dtcs[0].code == 0x012345
+    assert dtcs[0].status == 0x67
+
+    assert dtcs[1].code == 0x06789A
+    assert dtcs[1].status == 0x80
+
+
+def test_uds_client_parses_no_dtcs() -> None:
+    response = bytes.fromhex("59 02")
+
+    dtcs = UDSClient.parse_dtc_information(response)
+
+    assert dtcs == []
