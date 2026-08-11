@@ -66,7 +66,7 @@ class UDSClient:
             )
         )
 
-        return self.request(request)
+        return self.request_positive(request)
 
     def read_vin(self) -> str:
         """Read the vehicle VIN using UDS DID F190."""
@@ -96,4 +96,21 @@ class UDSClient:
             )
         )
 
-        return self.request(request)
+        return self.request_positive(request)
+
+    def request_positive(self, request: bytes) -> bytes:
+        """Send a UDS request and reject negative responses."""
+
+        response = self.request(request)
+
+        if response and response[0] == 0x7F:
+            negative = self.parse_negative_response(response)
+
+            raise ValueError(
+                f"Negative UDS response: "
+                f"service=0x{negative.service_id:02X}, "
+                f"nrc=0x{negative.nrc:02X} "
+                f"({negative.nrc_description})"
+            )
+
+        return response

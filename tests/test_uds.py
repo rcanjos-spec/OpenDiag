@@ -117,3 +117,56 @@ def test_uds_negative_response_has_nrc_description() -> None:
     response = UDSClient.parse_negative_response(bytes.fromhex("7F 10 12"))
 
     assert response.nrc_description == "SubFunctionNotSupported"
+
+
+def test_uds_client_request_positive_response() -> None:
+    transport = Mock()
+
+    transport.receive.return_value = bytes.fromhex("50 01 00 32 01 F4")
+
+    client = UDSClient(transport=transport)
+
+    response = client.request_positive(
+        bytes.fromhex("10 01"),
+    )
+
+    assert response == bytes.fromhex("50 01 00 32 01 F4")
+
+    transport.send.assert_called_once_with(
+        bytes.fromhex("10 01"),
+    )
+
+
+def test_uds_client_request_positive_rejects_negative_response() -> None:
+    transport = Mock()
+
+    transport.receive.return_value = bytes.fromhex("7F 10 12")
+
+    client = UDSClient(transport=transport)
+
+    with pytest.raises(ValueError, match="Negative UDS response"):
+        client.request_positive(
+            bytes.fromhex("10 01"),
+        )
+
+
+def test_uds_client_rejects_negative_diagnostic_session() -> None:
+    transport = Mock()
+
+    transport.receive.return_value = bytes.fromhex("7F 10 12")
+
+    client = UDSClient(transport=transport)
+
+    with pytest.raises(ValueError, match="Negative UDS response"):
+        client.start_diagnostic_session(0x02)
+
+
+def test_uds_client_rejects_negative_read_data_by_identifier() -> None:
+    transport = Mock()
+
+    transport.receive.return_value = bytes.fromhex("7F 22 31")
+
+    client = UDSClient(transport=transport)
+
+    with pytest.raises(ValueError, match="Negative UDS response"):
+        client.read_data_by_identifier(0xF190)
