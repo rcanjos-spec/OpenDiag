@@ -87,6 +87,7 @@ class ISOTPFrame:
     def to_can_frame(
         self,
         arbitration_id: int,
+        is_extended_id: bool = False,
     ) -> CANFrame:
         """Convert an ISO-TP frame into a CAN frame."""
 
@@ -97,6 +98,7 @@ class ISOTPFrame:
                 arbitration_id=arbitration_id,
                 data=data,
                 timestamp=0.0,
+                is_extended_id=is_extended_id,
             )
 
         if self.frame_type is FrameType.FIRST:
@@ -112,6 +114,7 @@ class ISOTPFrame:
                 arbitration_id=arbitration_id,
                 data=data,
                 timestamp=0.0,
+                is_extended_id=is_extended_id,
             )
 
         if self.frame_type is FrameType.CONSECUTIVE:
@@ -126,6 +129,7 @@ class ISOTPFrame:
                 arbitration_id=arbitration_id,
                 data=data,
                 timestamp=0.0,
+                is_extended_id=is_extended_id,
             )
 
         raise NotImplementedError(f"Unsupported frame type: {self.frame_type}")

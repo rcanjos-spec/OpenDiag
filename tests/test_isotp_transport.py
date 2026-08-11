@@ -1,5 +1,7 @@
 from unittest.mock import Mock, call
 
+import pytest
+
 from opendiag.core.can_frame import CANFrame
 from opendiag.protocols.isotp import (
     ISOTPFrame,
@@ -161,3 +163,146 @@ def test_transport_uses_real_isotp_components() -> None:
     )
 
     assert transport is not None
+
+
+def test_transport_sends_extended_can_frame() -> None:
+    bus = Mock()
+
+    transport = ISOTPTransport(
+        bus=bus,
+        tx_id=0x18DB33F1,
+        tx_extended=True,
+    )
+
+    transport.send(
+        b"\x09\x02",
+    )
+
+    frame = bus.send.call_args.args[0]
+
+    assert frame.arbitration_id == 0x18DB33F1
+    assert frame.data == b"\x02\x09\x02"
+    assert frame.is_extended_id is True
+
+
+def test_transport_builds_extended_obd_request() -> None:
+    bus = Mock()
+
+    transport = ISOTPTransport(
+        bus=bus,
+        tx_id=0x18DB33F1,
+        tx_extended=True,
+    )
+
+    transport.send(b"\x09\x02")
+
+    frame = bus.send.call_args.args[0]
+
+    assert frame.arbitration_id == 0x18DB33F1
+    assert frame.is_extended_id is True
+    assert frame.data == b"\x02\x09\x02"
+
+
+def test_transport_receives_only_from_configured_rx_id() -> None:
+    bus = Mock()
+
+    bus.receive.side_effect = [
+        CANFrame(
+            arbitration_id=0x18DA10F1,
+            data=bytes.fromhex("02 7E 00"),
+            timestamp=0.0,
+            is_extended_id=True,
+        ),
+        CANFrame(
+            arbitration_id=0x18DAF110,
+            data=bytes.fromhex("02 7E 00"),
+            timestamp=0.1,
+            is_extended_id=True,
+        ),
+    ]
+
+    transport = ISOTPTransport(
+        bus=bus,
+        rx_id=0x18DAF110,
+    )
+
+    payload = transport.receive()
+
+    assert payload == bytes.fromhex("7E 00")
+    assert bus.receive.call_count == 2
+
+
+def test_transport_sends_flow_control_for_first_frame() -> None:
+    bus = Mock()
+
+    bus.receive.side_effect = [
+        CANFrame(
+            arbitration_id=0x18DAF110,
+            data=bytes.fromhex("10 14 49 02 01 39 42 44"),
+            timestamp=0.0,
+            is_extended_id=True,
+        ),
+        CANFrame(
+            arbitration_id=0x18DAF110,
+            data=bytes.fromhex("21 33 35 38 41 43 47 53"),
+            timestamp=0.1,
+            is_extended_id=True,
+        ),
+        CANFrame(
+            arbitration_id=0x18DAF110,
+            data=bytes.fromhex("22 59 4E 34 34 35 30 30"),
+            timestamp=0.2,
+            is_extended_id=True,
+        ),
+    ]
+
+    transport = ISOTPTransport(
+        bus=bus,
+        tx_id=0x18DB33F1,
+        tx_extended=True,
+        rx_id=0x18DAF110,
+    )
+
+    payload = transport.receive()
+
+    assert payload == bytes.fromhex(
+        "49 02 01 39 42 44 33 35 38 41 43 47 53 59 4E 34 34 35 30 30"
+    )
+
+    flow_control = bus.send.call_args.args[0]
+
+    assert flow_control.arbitration_id == 0x18DB33F1
+    assert flow_control.is_extended_id is True
+    assert flow_control.data == bytes.fromhex("30 00 00")
+
+
+def test_transport_receive_timeout() -> None:
+    bus = Mock()
+
+    bus.receive.return_value = None
+
+    transport = ISOTPTransport(
+        bus=bus,
+        rx_id=0x18DAF110,
+    )
+
+    with pytest.raises(TimeoutError, match="ISO-TP receive timeout"):
+        transport.receive(timeout=0.1)
+
+
+def test_transport_receive_timeout_is_total() -> None:
+    bus = Mock()
+
+    bus.receive.side_effect = lambda timeout=None: CANFrame(
+        arbitration_id=0x0F4,
+        data=b"\x02\x7e\x00",
+        timestamp=0.0,
+    )
+
+    transport = ISOTPTransport(
+        bus=bus,
+        rx_id=0x18DAF110,
+    )
+
+    with pytest.raises(TimeoutError, match="ISO-TP receive timeout"):
+        transport.receive(timeout=0.1)

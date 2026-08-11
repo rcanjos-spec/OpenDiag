@@ -122,3 +122,218 @@ Objetivo: analisar o conteúdo das mensagens e identificar possíveis mensagens 
 ### Marco do projeto
 
 O OpenDiag passou da fase de testes exclusivamente simulados para a **primeira interação funcional de descoberta com um barramento CAN automotivo real**.
+
+# Daily Log — OpenDiag
+
+**Data:** 10/08/2026
+**Projeto:** OpenDiag
+**Branch:** `main`
+
+## 1. Objetivo do dia
+
+Evoluir o `CANTrafficAnalyzer` para identificar automaticamente estruturas de integridade presentes em frames CAN reais, especialmente:
+
+* Contadores sequenciais;
+* Contadores de 4 bits;
+* Rollover;
+* CRC-8/SAE-J1850;
+* Separação entre campo de contador e campo de CRC;
+* Análise dentro de `Payload States`.
+
+## 2. Implementações realizadas
+
+### Contador CAN
+
+Foi aprimorada a detecção de contadores:
+
+* Contador de 8 bits;
+* Contador de 4 bits;
+* `step = +1`;
+* `modulus = 16` ou `256`;
+* Detecção de rollover;
+* Detecção de contador dentro de um `Payload State`.
+
+### Integridade CAN
+
+Foi implementada a detecção de:
+
+**CRC-8/SAE-J1850**
+
+Parâmetros identificados:
+
+* Polynomial: `0x1D`
+* Init: `0xFF`
+* Xorout: `0xFF`
+* Campo CRC identificado no byte 7;
+* Dados protegidos: bytes `0–6`.
+
+### Correção importante
+
+O fluxo do analisador foi reorganizado para detectar a integridade antes do contador.
+
+Assim:
+
+```text
+Frames
+  ↓
+Agrupamento por ID
+  ↓
+Detecção CRC
+  ↓
+Exclusão dos bytes de integridade
+  ↓
+Detecção de contador
+  ↓
+Análise de propriedades
+  ↓
+Análise por Payload State
+```
+
+Isso eliminou o falso positivo em que o byte 7, que contém o CRC, também era identificado como contador.
+
+## 3. Testes automatizados
+
+A suíte específica do analisador chegou a:
+
+```text
+22 passed
+```
+
+Foi acrescentado um teste de regressão para garantir a coexistência de:
+
+```text
+contador + CRC
+```
+
+no mesmo frame.
+
+A suíte completa terminou com:
+
+```text
+178 passed in 1.92s
+```
+
+Qualidade:
+
+```text
+ruff check
+All checks passed!
+
+ruff format --check
+145 files already formatted
+```
+
+## 4. Teste em hardware real
+
+Foi executado o `05_can_analyzer.py` utilizando:
+
+```text
+Interface : COM6
+Bitrate   : 500000
+Duration  : 10 s
+```
+
+Resultado:
+
+```text
+Frames capturados: 6859
+IDs encontrados:   17
+```
+
+Os principais IDs foram identificados com periodicidades coerentes:
+
+* `0xF4` → ~100 Hz
+* `0xFB` → ~100 Hz
+* `0xFC` → ~100 Hz
+* `0xFF` → ~100 Hz
+* `0x100` → ~100 Hz
+* `0x1F4` → ~50 Hz
+
+No tráfego real, o analisador identificou corretamente:
+
+```text
+byte 6
+bits 0-3
+step +1
+modulus 16
+rollover YES
+```
+
+e:
+
+```text
+byte 7
+CRC-8/SAE-J1850
+protected bytes 0-6
+matches 16/16
+```
+
+O resultado foi confirmado nos IDs `0xF4`, `0xFB`, `0xFC`, `0xFF`, `0x100` e `0x1F4`.
+
+## 5. Git
+
+Commit realizado:
+
+```text
+ee4d80e
+feat: enhance CAN traffic integrity analysis
+```
+
+Pre-commit hooks:
+
+```text
+ruff                  Passed
+ruff format           Passed
+trim trailing whitespace  Passed
+fix end of files      Passed
+```
+
+Push realizado com sucesso para:
+
+```text
+origin/main
+```
+
+Estado final:
+
+```text
+working tree clean
+main sincronizado com origin/main
+```
+
+## 6. Estado ao final do dia
+
+```text
+TESTES       ✅ 178 passed
+RUFF         ✅ All checks passed
+FORMAT       ✅ 145 files already formatted
+HARDWARE     ✅ CAN real validado
+COMMIT       ✅ ee4d80e
+PUSH         ✅ origin/main
+WORKTREE     ✅ clean
+```
+
+## 7. Próximo passo
+
+Não alterar o código validado hoje.
+
+Retomar a partir do commit:
+
+```text
+ee4d80e
+```
+
+Próxima evolução planejada do `CANTrafficAnalyzer`:
+
+**identificação automática dos bytes que provavelmente representam sinais/dados físicos**, separando-os de:
+
+* contador;
+* CRC;
+* campos constantes;
+* campos de estado.
+
+A ideia é evoluir de uma análise estrutural do frame para uma primeira camada de **engenharia reversa automática dos sinais CAN**.
+
+## Frase para retomada
+
+> **“Hoje o OpenDiag deixou de apenas observar o tráfego CAN e passou a reconhecer parte da estrutura interna dos frames reais.”**
