@@ -306,3 +306,18 @@ def test_transport_receive_timeout_is_total() -> None:
 
     with pytest.raises(TimeoutError, match="ISO-TP receive timeout"):
         transport.receive(timeout=0.1)
+
+
+def test_isotp_transport_receive_times_out() -> None:
+    bus = Mock()
+    bus.receive.return_value = None
+
+    transport = ISOTPTransport(
+        bus=bus,
+        rx_id=0x18DAF110,
+    )
+
+    with pytest.raises(TimeoutError, match="ISO-TP receive timeout"):
+        transport.receive(timeout=0.01)
+
+    bus.receive.assert_called()
