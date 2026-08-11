@@ -117,14 +117,25 @@ class UDSClient:
 
         return self.request_positive(request)
 
+    def receive(self) -> bytes:
+        """Receive a UDS response from the transport."""
+
+        return self._transport.receive()
+
     def request_positive(self, request: bytes) -> bytes:
         """Send a UDS request and reject negative responses."""
 
-        response = self.request(request)
+        self._transport.send(request)
 
-        if response and response[0] == 0x7F:
-            negative = self.parse_negative_response(response)
+        while True:
+            response = self.receive()
 
-            raise UDSNegativeResponseError(negative)
+            if response and response[0] == 0x7F:
+                negative = self.parse_negative_response(response)
 
-        return response
+                if negative.nrc == 0x78:
+                    continue
+
+                raise UDSNegativeResponseError(negative)
+
+            return response

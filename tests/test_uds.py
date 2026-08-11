@@ -190,3 +190,22 @@ def test_uds_negative_response_raises_uds_error() -> None:
     assert error.service_id == 0x22
     assert error.nrc == 0x31
     assert error.nrc_description == "RequestOutOfRange"
+
+
+def test_uds_client_request_positive_ignores_response_pending() -> None:
+    transport = Mock()
+
+    transport.receive.side_effect = [
+        bytes.fromhex("7F 10 78"),
+        bytes.fromhex("50 01 00 32 01 F4"),
+    ]
+
+    client = UDSClient(transport=transport)
+
+    response = client.request_positive(
+        bytes.fromhex("10 01"),
+    )
+
+    assert response == bytes.fromhex("50 01 00 32 01 F4")
+
+    assert transport.receive.call_count == 2
