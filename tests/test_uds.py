@@ -1,5 +1,7 @@
 from unittest.mock import Mock
 
+import pytest
+
 from opendiag.protocols.uds import UDSClient
 
 
@@ -79,3 +81,39 @@ def test_uds_client_starts_default_session() -> None:
     transport.send.assert_called_once_with(
         bytes.fromhex("10 01"),
     )
+
+
+def test_uds_client_detects_negative_response() -> None:
+    transport = Mock()
+
+    transport.receive.return_value = bytes.fromhex("7F 10 12")
+
+    client = UDSClient(transport=transport)
+
+    response = client.request(bytes.fromhex("10 02"))
+
+    assert response == bytes.fromhex("7F 10 12")
+
+    transport.send.assert_called_once_with(
+        bytes.fromhex("10 02"),
+    )
+
+
+def test_uds_client_parses_negative_response() -> None:
+    response = bytes.fromhex("7F 10 12")
+
+    negative = UDSClient.parse_negative_response(response)
+
+    assert negative.service_id == 0x10
+    assert negative.nrc == 0x12
+
+
+def test_uds_client_rejects_invalid_negative_response() -> None:
+    with pytest.raises(ValueError, match="Invalid UDS negative response"):
+        UDSClient.parse_negative_response(bytes.fromhex("50 01 00"))
+
+
+def test_uds_negative_response_has_nrc_description() -> None:
+    response = UDSClient.parse_negative_response(bytes.fromhex("7F 10 12"))
+
+    assert response.nrc_description == "SubFunctionNotSupported"

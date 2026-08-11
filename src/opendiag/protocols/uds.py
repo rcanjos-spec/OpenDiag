@@ -1,5 +1,49 @@
+from dataclasses import dataclass
+
+
+@dataclass(frozen=True, slots=True)
+class UDSNegativeResponse:
+    """Represents a UDS negative response."""
+
+    service_id: int
+    nrc: int
+
+    @property
+    def nrc_description(self) -> str:
+        """Return a human-readable description for the NRC."""
+
+        descriptions = {
+            0x10: "GeneralReject",
+            0x11: "ServiceNotSupported",
+            0x12: "SubFunctionNotSupported",
+            0x13: "IncorrectMessageLengthOrInvalidFormat",
+            0x22: "ConditionsNotCorrect",
+            0x31: "RequestOutOfRange",
+            0x33: "SecurityAccessDenied",
+            0x35: "InvalidKey",
+            0x78: "ResponsePending",
+        }
+
+        return descriptions.get(
+            self.nrc,
+            "UnknownNRC",
+        )
+
+
 class UDSClient:
     """Basic UDS client over an ISO-TP transport."""
+
+    @staticmethod
+    def parse_negative_response(response: bytes) -> UDSNegativeResponse:
+        """Parse a UDS negative response."""
+
+        if len(response) != 3 or response[0] != 0x7F:
+            raise ValueError("Invalid UDS negative response")
+
+        return UDSNegativeResponse(
+            service_id=response[1],
+            nrc=response[2],
+        )
 
     def __init__(self, *, transport) -> None:
         self._transport = transport
