@@ -37,23 +37,6 @@ class UDSClient:
         self._scanner = scanner
         self._parser = parser
 
-    def read_vin(self) -> str:
-        """Read the vehicle VIN using UDS DID F190."""
-
-        response = self.send(
-            ReadDataByIdentifier(
-                did=0xF190,
-            )
-        )
-
-        if len(response.value) != 17:
-            raise ValueError("VIN must contain 17 characters")
-
-        try:
-            return response.value.decode("ascii")
-        except UnicodeDecodeError as exc:
-            raise ValueError("VIN must contain ASCII characters") from exc
-
     def read_data_by_identifier(
         self,
         did: int,
@@ -65,6 +48,19 @@ class UDSClient:
                 did=did,
             )
         )
+
+    def read_vin(self) -> str:
+        """Read the vehicle VIN using UDS DID F190."""
+
+        response = self.read_data_by_identifier(0xF190)
+
+        if len(response.value) != 17:
+            raise ValueError("VIN must contain 17 characters")
+
+        try:
+            return response.value.decode("ascii")
+        except UnicodeDecodeError as exc:
+            raise ValueError("VIN must contain ASCII characters") from exc
 
     def read_dtc_information(
         self,

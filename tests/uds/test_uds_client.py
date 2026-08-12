@@ -321,3 +321,29 @@ def test_read_vin_rejects_non_ascii() -> None:
         match="VIN must contain ASCII characters",
     ):
         client.read_vin()
+
+
+def test_read_data_by_identifier() -> None:
+    transport = Mock()
+
+    transport.receive.return_value = b"\x62\xf1\x90ABC"
+
+    parser = Mock()
+    parser.parse.return_value = "OK"
+
+    client = UDSClient(
+        transport=transport,
+        parser=parser,
+    )
+
+    response = client.read_data_by_identifier(0xF190)
+
+    transport.send.assert_called_once_with(
+        bytes.fromhex("22 F1 90"),
+    )
+
+    parser.parse.assert_called_once_with(
+        b"\x62\xf1\x90ABC",
+    )
+
+    assert response == "OK"
