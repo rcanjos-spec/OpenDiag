@@ -58,7 +58,13 @@ class UDSClient:
 
         response = self.read_data_by_identifier(did)
 
-        definition = self._did_resolver.resolve(did)
+        if self._did_resolver is None:
+            raise ValueError("DID resolver is not configured")
+
+        if self._did_decoder is None:
+            raise ValueError("DID decoder is not configured")
+
+        definition = self._did_resolver.resolve(response.did)
 
         if definition is None:
             raise ValueError(f"Unknown DID: 0x{did:04X}")

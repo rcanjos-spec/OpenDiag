@@ -419,3 +419,72 @@ def test_read_did() -> None:
     transport.send.assert_called_once_with(
         bytes.fromhex("22 F1 90"),
     )
+
+
+def test_read_did_rejects_unknown_did() -> None:
+    transport = Mock()
+
+    transport.receive.return_value = bytes.fromhex("62 F1 99 12 34")
+
+    client = UDSClient(
+        transport=transport,
+        parser=UDSResponseParser(
+            registry=ResponseRegistry(),
+        ),
+        did_resolver=DIDResolver(
+            Path("data/dids/generic.json"),
+        ),
+        did_decoder=DIDDecoder(),
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="Unknown DID: 0xF199",
+    ):
+        client.read_did(0xF199)
+
+
+def test_read_did_requires_did_resolver() -> None:
+    transport = Mock()
+
+    transport.receive.return_value = bytes.fromhex(
+        "62 F1 90 31 48 47 43 4D 38 32 36 33 33 41 30 30 34 33 35 32"
+    )
+
+    client = UDSClient(
+        transport=transport,
+        parser=UDSResponseParser(
+            registry=ResponseRegistry(),
+        ),
+        did_decoder=DIDDecoder(),
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="DID resolver is not configured",
+    ):
+        client.read_did(0xF190)
+
+
+def test_read_did_requires_did_decoder() -> None:
+    transport = Mock()
+
+    transport.receive.return_value = bytes.fromhex(
+        "62 F1 90 31 48 47 43 4D 38 32 36 33 33 41 30 30 34 33 35 32"
+    )
+
+    client = UDSClient(
+        transport=transport,
+        parser=UDSResponseParser(
+            registry=ResponseRegistry(),
+        ),
+        did_resolver=DIDResolver(
+            Path("data/dids/generic.json"),
+        ),
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="DID decoder is not configured",
+    ):
+        client.read_did(0xF190)
