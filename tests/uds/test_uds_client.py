@@ -1,5 +1,7 @@
 from unittest.mock import Mock
 
+import pytest
+
 from opendiag.uds.client import UDSClient
 from opendiag.uds.reset import ResetType
 from opendiag.uds.response_parser import UDSResponseParser
@@ -263,3 +265,59 @@ def test_uds_client_reads_data_by_identifier() -> None:
     transport.send.assert_called_once_with(
         bytes.fromhex("22 F1 90"),
     )
+
+
+def test_read_vin() -> None:
+    transport = Mock()
+
+    transport.receive.return_value = b"\x62\xf1\x90" + b"1HGCM82633A004352"
+
+    client = UDSClient(
+        transport=transport,
+        parser=UDSResponseParser(
+            registry=ResponseRegistry(),
+        ),
+    )
+
+    vin = client.read_vin()
+
+    assert vin == "1HGCM82633A004352"
+
+    transport.send.assert_called_once_with(
+        bytes.fromhex("22 F1 90"),
+    )
+
+
+def test_read_vin_rejects_invalid_length() -> None:
+    transport = Mock()
+
+    transport.receive.return_value = b"\x62\xf1\x90" + b"123"
+
+    client = UDSClient(
+        transport=transport,
+        parser=UDSResponseParser(
+            registry=ResponseRegistry(),
+        ),
+    )
+
+    with pytest.raises(ValueError, match="VIN must contain 17 characters"):
+        client.read_vin()
+
+
+def test_read_vin_rejects_non_ascii() -> None:
+    transport = Mock()
+
+    transport.receive.return_value = b"\x62\xf1\x90" + b"1HGCM82633A00435\xff"
+
+    client = UDSClient(
+        transport=transport,
+        parser=UDSResponseParser(
+            registry=ResponseRegistry(),
+        ),
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="VIN must contain ASCII characters",
+    ):
+        client.read_vin()
