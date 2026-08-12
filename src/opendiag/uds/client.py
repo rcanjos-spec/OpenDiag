@@ -84,15 +84,11 @@ class UDSClient:
     def tester_present(
         self,
     ):
-        request = TesterPresent()
+        """Send Tester Present request."""
 
-        self._transport.send(
-            request.data,
+        return self.send(
+            TesterPresent(),
         )
-
-        response = self._transport.receive()
-
-        return self._parser.parse(response)
 
     def ecu_reset(
         self,

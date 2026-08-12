@@ -182,3 +182,30 @@ def test_uds_client_reads_dtc_information() -> None:
     transport.send.assert_called_once_with(
         bytes.fromhex("19 02 FF"),
     )
+
+
+def test_tester_present() -> None:
+    transport = Mock()
+    transport.receive.return_value = b"\x7e\x00"
+
+    parser = Mock()
+    parser.parse.return_value = "OK"
+
+    client = UDSClient(
+        transport=transport,
+        parser=parser,
+    )
+
+    response = client.tester_present()
+
+    transport.send.assert_called_once_with(
+        b"\x3e\x00",
+    )
+
+    transport.receive.assert_called_once_with()
+
+    parser.parse.assert_called_once_with(
+        b"\x7e\x00",
+    )
+
+    assert response == "OK"
