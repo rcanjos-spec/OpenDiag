@@ -54,6 +54,18 @@ class UDSClient:
         except UnicodeDecodeError as exc:
             raise ValueError("VIN must contain ASCII characters") from exc
 
+    def read_data_by_identifier(
+        self,
+        did: int,
+    ):
+        """Read data by identifier using UDS service 0x22."""
+
+        return self.send(
+            ReadDataByIdentifier(
+                did=did,
+            )
+        )
+
     def read_dtc_information(
         self,
         subfunction: int = 0x02,

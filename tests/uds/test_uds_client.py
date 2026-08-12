@@ -237,3 +237,29 @@ def test_diagnostic_session_control() -> None:
     )
 
     assert response == "OK"
+
+
+def test_uds_client_reads_data_by_identifier() -> None:
+    transport = Mock()
+
+    transport.receive.return_value = bytes.fromhex(
+        "62 F1 90 31 48 47 43 4D 38 32 36 33 33 41 30 30 34 33 35 32"
+    )
+
+    client = UDSClient(
+        transport=transport,
+        parser=UDSResponseParser(
+            registry=ResponseRegistry(),
+        ),
+    )
+
+    response = client.read_data_by_identifier(
+        0xF190,
+    )
+
+    assert response.did == 0xF190
+    assert response.value == b"1HGCM82633A004352"
+
+    transport.send.assert_called_once_with(
+        bytes.fromhex("22 F1 90"),
+    )
