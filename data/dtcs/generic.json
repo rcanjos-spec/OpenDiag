@@ -1,0 +1,7 @@
+{
+  "010700": {
+    "description": "DTC de teste",
+    "system": "Motor",
+    "severity": "warning"
+  }
+}
