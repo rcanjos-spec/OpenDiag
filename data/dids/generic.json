@@ -1,0 +1,7 @@
+{
+  "F190": {
+    "name": "VIN",
+    "type": "ascii",
+    "length": 17
+  }
+}
