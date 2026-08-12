@@ -9,6 +9,7 @@ from opendiag.uds.responses.read_dtc_information import (
 )
 from opendiag.uds.security import SecurityLevel
 from opendiag.uds.services.tester_present import TesterPresent
+from opendiag.uds.session import SessionType
 
 
 def test_create_client() -> None:
@@ -206,6 +207,33 @@ def test_tester_present() -> None:
 
     parser.parse.assert_called_once_with(
         b"\x7e\x00",
+    )
+
+    assert response == "OK"
+
+
+def test_diagnostic_session_control() -> None:
+    transport = Mock()
+    transport.receive.return_value = b"\x50\x03"
+
+    parser = Mock()
+    parser.parse.return_value = "OK"
+
+    client = UDSClient(
+        transport=transport,
+        parser=parser,
+    )
+
+    response = client.diagnostic_session_control(
+        SessionType.EXTENDED,
+    )
+
+    transport.send.assert_called_once_with(
+        b"\x10\x03",
+    )
+
+    parser.parse.assert_called_once_with(
+        b"\x50\x03",
     )
 
     assert response == "OK"

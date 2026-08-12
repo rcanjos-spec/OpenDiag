@@ -1,6 +1,9 @@
 from opendiag.uds.request import UDSRequest
 from opendiag.uds.reset import ResetType
 from opendiag.uds.security import SecurityLevel
+from opendiag.uds.services.diagnostic_session_control import (
+    DiagnosticSessionControl,
+)
 from opendiag.uds.services.ecu_reset import ECUReset
 from opendiag.uds.services.read_data_by_identifier import (
     ReadDataByIdentifier,
@@ -10,6 +13,7 @@ from opendiag.uds.services.read_dtc_information import (
 )
 from opendiag.uds.services.security_access import SecurityAccess
 from opendiag.uds.services.tester_present import TesterPresent
+from opendiag.uds.session import SessionType
 
 
 class UDSClient:
@@ -88,6 +92,18 @@ class UDSClient:
 
         return self.send(
             TesterPresent(),
+        )
+
+    def diagnostic_session_control(
+        self,
+        session_type: SessionType = SessionType.DEFAULT,
+    ):
+        """Change the ECU diagnostic session."""
+
+        return self.send(
+            DiagnosticSessionControl(
+                session_type=session_type,
+            )
         )
 
     def ecu_reset(
