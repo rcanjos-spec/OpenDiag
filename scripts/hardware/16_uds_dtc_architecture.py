@@ -1,6 +1,8 @@
 from opendiag.bus.python_can import PythonCANBus
 from opendiag.protocols.isotp_transport import ISOTPTransport
-from opendiag.protocols.uds import UDSClient
+from opendiag.uds.client import UDSClient
+from opendiag.uds.response_parser import UDSResponseParser
+from opendiag.uds.response_registry import ResponseRegistry
 
 bus = PythonCANBus(
     interface="slcan",
@@ -18,9 +20,16 @@ try:
         reassembly_timeout=5.0,
     )
 
-    client = UDSClient(transport=transport)
+    parser = UDSResponseParser(
+        registry=ResponseRegistry(),
+    )
 
-    print("## OpenDiag - UDS DTC Reader")
+    client = UDSClient(
+        transport=transport,
+        parser=parser,
+    )
+
+    print("## KACTOENG - UDS DTC Reader")
     print()
     print("Interface : COM6")
     print("Bitrate   : 500000")
@@ -31,10 +40,12 @@ try:
     print("Solicitando DTCs...")
     print()
 
-    dtcs = client.read_dtc_information(
-        0x02,
+    response = client.read_dtc_information(
+        subfunction=0x02,
         status_mask=0xFF,
     )
+
+    dtcs = response.dtcs
 
     if not dtcs:
         print("Nenhum DTC encontrado.")

@@ -2,6 +2,11 @@ from unittest.mock import Mock
 
 from opendiag.uds.client import UDSClient
 from opendiag.uds.reset import ResetType
+from opendiag.uds.response_parser import UDSResponseParser
+from opendiag.uds.response_registry import ResponseRegistry
+from opendiag.uds.responses.read_dtc_information import (
+    ReadDTCInformationResponse,
+)
 from opendiag.uds.security import SecurityLevel
 from opendiag.uds.services.tester_present import TesterPresent
 
@@ -141,3 +146,39 @@ def test_security_access() -> None:
     )
 
     assert response == "OK"
+
+
+def test_uds_client_reads_dtc_information() -> None:
+    transport = Mock()
+
+    transport.receive.return_value = bytes.fromhex("59 02 CF 01 07 00 0F 01 30 00 40")
+
+    client = UDSClient(
+        transport=transport,
+        parser=UDSResponseParser(
+            registry=ResponseRegistry(),
+        ),
+    )
+
+    response = client.read_dtc_information()
+
+    assert isinstance(
+        response,
+        ReadDTCInformationResponse,
+    )
+
+    assert response.sid == 0x59
+    assert response.subfunction == 0x02
+    assert response.status_availability_mask == 0xCF
+
+    assert len(response.dtcs) == 2
+
+    assert response.dtcs[0].code == 0x010700
+    assert response.dtcs[0].status == 0x0F
+
+    assert response.dtcs[1].code == 0x013000
+    assert response.dtcs[1].status == 0x40
+
+    transport.send.assert_called_once_with(
+        bytes.fromhex("19 02 FF"),
+    )

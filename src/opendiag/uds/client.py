@@ -2,6 +2,12 @@ from opendiag.uds.request import UDSRequest
 from opendiag.uds.reset import ResetType
 from opendiag.uds.security import SecurityLevel
 from opendiag.uds.services.ecu_reset import ECUReset
+from opendiag.uds.services.read_data_by_identifier import (
+    ReadDataByIdentifier,
+)
+from opendiag.uds.services.read_dtc_information import (
+    ReadDTCInformation,
+)
 from opendiag.uds.services.security_access import SecurityAccess
 from opendiag.uds.services.tester_present import TesterPresent
 
@@ -26,6 +32,37 @@ class UDSClient:
         self._transport = transport
         self._scanner = scanner
         self._parser = parser
+
+    def read_vin(self) -> str:
+        """Read the vehicle VIN using UDS DID F190."""
+
+        response = self.send(
+            ReadDataByIdentifier(
+                did=0xF190,
+            )
+        )
+
+        if len(response.value) != 17:
+            raise ValueError("VIN must contain 17 characters")
+
+        try:
+            return response.value.decode("ascii")
+        except UnicodeDecodeError as exc:
+            raise ValueError("VIN must contain ASCII characters") from exc
+
+    def read_dtc_information(
+        self,
+        subfunction: int = 0x02,
+        status_mask: int = 0xFF,
+    ):
+        """Read diagnostic trouble code information."""
+
+        return self.send(
+            ReadDTCInformation(
+                subfunction=subfunction,
+                status_mask=status_mask,
+            )
+        )
 
     def send(
         self,

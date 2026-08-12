@@ -1,6 +1,8 @@
 from opendiag.bus.python_can import PythonCANBus
 from opendiag.protocols.isotp_transport import ISOTPTransport
-from opendiag.protocols.uds import UDSClient
+from opendiag.uds.client import UDSClient
+from opendiag.uds.response_parser import UDSResponseParser
+from opendiag.uds.response_registry import ResponseRegistry
 
 bus = PythonCANBus(
     interface="slcan",
@@ -15,11 +17,19 @@ try:
         tx_extended=True,
         rx_id=0x18DAF110,
         flow_control_id=0x18DA10F1,
+        reassembly_timeout=5.0,
     )
 
-    client = UDSClient(transport=transport)
+    parser = UDSResponseParser(
+        registry=ResponseRegistry(),
+    )
 
-    print("## OpenDiag - UDS VIN Reader")
+    client = UDSClient(
+        transport=transport,
+        parser=parser,
+    )
+
+    print("## KACTOENG - UDS VIN Reader")
     print()
     print("Interface : COM6")
     print("Bitrate   : 500000")
@@ -29,7 +39,10 @@ try:
     print()
     print("Solicitando VIN...")
     print()
-    print("VIN:", client.read_vin())
+
+    vin = client.read_vin()
+
+    print(f"VIN: {vin}")
 
 finally:
     bus.shutdown()

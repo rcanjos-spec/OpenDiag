@@ -8,6 +8,9 @@ from opendiag.uds.responses.ecu_reset import ECUResetResponse
 from opendiag.uds.responses.read_data_by_identifier import (
     ReadDataByIdentifierResponse,
 )
+from opendiag.uds.responses.read_dtc_information import (
+    ReadDTCInformationResponse,
+)
 from opendiag.uds.responses.security_access import (
     SecurityAccessResponse,
 )
@@ -103,3 +106,30 @@ def test_parse_security_access_response() -> None:
     assert response.sid == 0x67
     assert response.security_level == SecurityLevel.LEVEL_1_REQUEST_SEED
     assert response.security_data == b"\x12\x34\x56\x78"
+
+
+def test_parse_read_dtc_information_response() -> None:
+    parser = UDSResponseParser(
+        registry=ResponseRegistry(),
+    )
+
+    response = parser.parse(
+        bytes.fromhex("59 02 CF 01 07 00 0F 01 30 00 40"),
+    )
+
+    assert isinstance(
+        response,
+        ReadDTCInformationResponse,
+    )
+
+    assert response.sid == 0x59
+    assert response.subfunction == 0x02
+    assert response.status_availability_mask == 0xCF
+
+    assert len(response.dtcs) == 2
+
+    assert response.dtcs[0].code == 0x010700
+    assert response.dtcs[0].status == 0x0F
+
+    assert response.dtcs[1].code == 0x013000
+    assert response.dtcs[1].status == 0x40

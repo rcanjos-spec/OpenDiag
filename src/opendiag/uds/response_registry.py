@@ -5,6 +5,9 @@ from opendiag.uds.responses.ecu_reset import ECUResetResponse
 from opendiag.uds.responses.read_data_by_identifier import (
     ReadDataByIdentifierResponse,
 )
+from opendiag.uds.responses.read_dtc_information import (
+    ReadDTCInformationResponse,
+)
 from opendiag.uds.responses.security_access import (
     SecurityAccessResponse,
 )
@@ -24,6 +27,11 @@ class ResponseRegistry:
         self.register(
             0x50,
             DiagnosticSessionControlResponse,
+        )
+
+        self.register(
+            0x59,
+            ReadDTCInformationResponse,
         )
 
         self.register(
