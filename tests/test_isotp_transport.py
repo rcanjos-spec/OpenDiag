@@ -83,6 +83,7 @@ def test_transport_uses_segmenter_to_send() -> None:
 
     frame.to_can_frame.assert_called_once_with(
         arbitration_id=0x7E0,
+        is_extended_id=False,
     )
 
     bus.send.assert_called_once_with(can_frame)

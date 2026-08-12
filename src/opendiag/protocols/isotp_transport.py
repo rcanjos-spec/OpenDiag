@@ -1,3 +1,11 @@
+"""
+ISO-TP transport over CAN.
+
+Provides the transport layer responsible for segmenting outgoing
+messages, transmitting CAN frames, receiving ISO-TP frames, and
+reassembling incoming messages.
+"""
+
 import time
 
 from opendiag.core.can_frame import CANFrame
@@ -10,7 +18,14 @@ from opendiag.protocols.isotp import (
 
 
 class ISOTPTransport:
-    """ISO-TP transport over a CAN bus."""
+    """
+    ISO-TP transport implementation over a CAN bus.
+
+    This class connects the application layer to the CAN bus by
+    handling ISO-TP segmentation and reassembly. It can operate
+    either through a CAN bus implementation or through a scanner
+    interface.
+    """
 
     def __init__(
         self,
@@ -25,10 +40,19 @@ class ISOTPTransport:
         rx_id: int | None = None,
         flow_control_id: int | None = None,
     ) -> None:
+        """
+        Initialize the ISO-TP transport.
+
+        The segmenter and reassembler can be injected for testing or
+        specialized behavior. When they are not supplied, the default
+        implementations are created internally.
+        """
         self._bus = bus
         self._scanner = scanner
         self._segmenter = segmenter or ISOTPSegmenter()
-        self._reassembler = reassembler or ISOTPReassembler()
+        self._reassembler = reassembler or ISOTPReassembler(
+            timeout=reassembly_timeout,
+        )
         self._tx_id = tx_id
         self._tx_extended = tx_extended
         self._rx_id = rx_id
@@ -40,16 +64,18 @@ class ISOTPTransport:
         self,
         data: bytes,
     ) -> None:
+        """
+        Segment and transmit an application-layer message.
+
+        The payload is divided into ISO-TP frames and each frame is
+        converted into a CANFrame before being passed to the selected
+        CAN transport.
+        """
         for frame in self._segmenter.segment(data):
-            if self._tx_extended:
-                can_frame = frame.to_can_frame(
-                    arbitration_id=self._tx_id,
-                    is_extended_id=True,
-                )
-            else:
-                can_frame = frame.to_can_frame(
-                    arbitration_id=self._tx_id,
-                )
+            can_frame = frame.to_can_frame(
+                arbitration_id=self._tx_id,
+                is_extended_id=self._tx_extended,
+            )
 
             if self._scanner is not None:
                 self._scanner.send(can_frame)
@@ -60,6 +86,13 @@ class ISOTPTransport:
         self,
         timeout: float | None = None,
     ):
+        """
+        Receive and reassemble an ISO-TP message.
+
+        CAN frames that do not match the configured receive identifier
+        are ignored. When a First Frame is received, a Flow Control
+        frame is transmitted to allow the sender to continue.
+        """
         deadline = None if timeout is None else time.monotonic() + timeout
 
         while True:
@@ -83,6 +116,7 @@ class ISOTPTransport:
             if can_frame is None:
                 raise TimeoutError("ISO-TP receive timeout")
 
+            # Ignore frames belonging to other CAN identifiers.
             if self._rx_id is not None and can_frame.arbitration_id != self._rx_id:
                 continue
 
@@ -90,10 +124,14 @@ class ISOTPTransport:
                 can_frame,
             )
 
+            # A First Frame requires Flow Control before the sender
+            # transmits the remaining Consecutive Frames.
             if frame.frame_type is FrameType.FIRST:
                 flow_control = CANFrame(
                     arbitration_id=self._flow_control_id,
-                    data=bytes.fromhex("30 00 00 00 00 00 00 00"),
+                    data=bytes.fromhex(
+                        "30 00 00 00 00 00 00 00",
+                    ),
                     timestamp=0.0,
                     is_extended_id=self._tx_extended,
                 )
@@ -109,14 +147,3 @@ class ISOTPTransport:
 
             if message is not None:
                 return message.payload
-                if self._scanner is not None:
-                    self._scanner.send(flow_control)
-                else:
-                    self._bus.send(flow_control)
-
-                message = self._reassembler.feed(
-                    frame,
-                )
-
-                if message is not None:
-                    return message.payload

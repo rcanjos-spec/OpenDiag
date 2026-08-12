@@ -1,20 +1,21 @@
 """
-OpenDiag exception hierarchy.
+Exception hierarchy.
 
-Every exception raised by OpenDiag should inherit from OpenDiagError.
+All project-specific exceptions inherit from KACTOENGError, allowing
+callers to catch either a specific error or the common base exception.
 """
 
 
 class OpenDiagError(Exception):
-    """Base exception for all OpenDiag errors."""
+    """Base exception for all project-specific errors."""
 
 
 class ConfigurationError(OpenDiagError):
-    """Configuration related error."""
+    """Configuration-related error."""
 
 
 class BusError(OpenDiagError):
-    """Bus communication error."""
+    """CAN bus communication error."""
 
 
 class TransportError(OpenDiagError):
@@ -38,4 +39,4 @@ class SecurityError(OpenDiagError):
 
 
 class PluginError(OpenDiagError):
-    """Plugin related error."""
+    """Plugin-related error."""
