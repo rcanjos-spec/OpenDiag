@@ -37,6 +37,9 @@ class ReadDataByIdentifierResponse(PositiveResponse):
         two bytes contain the DID, and all remaining bytes contain
         the value associated with that DID.
         """
+        if len(data) < 3:
+            raise ValueError("Invalid ReadDataByIdentifier response")
+
         return cls(
             sid=data[0],
             did=int.from_bytes(data[1:3], "big"),

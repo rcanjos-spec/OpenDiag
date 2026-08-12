@@ -1,3 +1,5 @@
+import pytest
+
 from opendiag.uds.responses.read_data_by_identifier import (
     ReadDataByIdentifierResponse,
 )
@@ -23,3 +25,11 @@ def test_create_response_from_bytes() -> None:
     assert response.sid == 0x62
     assert response.did == 0xF190
     assert response.value == b"ABC"
+
+
+def test_create_response_from_bytes_rejects_invalid_payload() -> None:
+    with pytest.raises(
+        ValueError,
+        match="Invalid ReadDataByIdentifier response",
+    ):
+        ReadDataByIdentifierResponse.from_bytes(bytes.fromhex("62 F1"))
