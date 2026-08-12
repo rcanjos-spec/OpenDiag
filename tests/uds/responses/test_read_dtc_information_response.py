@@ -37,3 +37,33 @@ def test_read_dtc_information_response_rejects_invalid_payload() -> None:
         match="Invalid ReadDTCInformation response",
     ):
         ReadDTCInformationResponse.from_bytes(bytes.fromhex("59 02 CF 01 07 00"))
+
+
+def test_dtc_status_active() -> None:
+    response = ReadDTCInformationResponse.from_bytes(
+        bytes.fromhex("59 02 CF 01 07 00 01")
+    )
+
+    dtc = response.dtcs[0]
+
+    assert dtc.active is True
+
+
+def test_dtc_status_confirmed() -> None:
+    response = ReadDTCInformationResponse.from_bytes(
+        bytes.fromhex("59 02 CF 01 07 00 08")
+    )
+
+    dtc = response.dtcs[0]
+
+    assert dtc.confirmed is True
+
+
+def test_dtc_status_pending() -> None:
+    response = ReadDTCInformationResponse.from_bytes(
+        bytes.fromhex("59 02 CF 01 07 00 04")
+    )
+
+    dtc = response.dtcs[0]
+
+    assert dtc.pending is True

@@ -10,6 +10,21 @@ class DTC:
     code: int
     status: int
 
+    @property
+    def active(self) -> bool:
+        """Return whether the DTC is active."""
+        return bool(self.status & 0x01)
+
+    @property
+    def confirmed(self) -> bool:
+        """Return whether the DTC is confirmed."""
+        return bool(self.status & 0x08)
+
+    @property
+    def pending(self) -> bool:
+        """Return whether the DTC is pending."""
+        return bool(self.status & 0x04)
+
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ReadDTCInformationResponse(PositiveResponse):
