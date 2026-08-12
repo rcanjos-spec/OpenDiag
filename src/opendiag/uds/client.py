@@ -1,3 +1,7 @@
+from pathlib import Path
+
+from opendiag.uds.did_decoder import DIDDecoder
+from opendiag.uds.did_resolver import DIDResolver
 from opendiag.uds.request import UDSRequest
 from opendiag.uds.reset import ResetType
 from opendiag.uds.security import SecurityLevel
@@ -32,10 +36,16 @@ class UDSClient:
         transport=None,
         scanner=None,
         parser,
+        did_resolver=None,
+        did_decoder=None,
     ) -> None:
         self._transport = transport
         self._scanner = scanner
         self._parser = parser
+        self._did_resolver = did_resolver or DIDResolver(
+            Path("data/dids/generic.json"),
+        )
+        self._did_decoder = did_decoder or DIDDecoder()
 
     def read_data_by_identifier(
         self,
@@ -54,13 +64,17 @@ class UDSClient:
 
         response = self.read_data_by_identifier(0xF190)
 
-        if len(response.value) != 17:
-            raise ValueError("VIN must contain 17 characters")
+        definition = self._did_resolver.resolve(response.did)
 
-        try:
-            return response.value.decode("ascii")
-        except UnicodeDecodeError as exc:
-            raise ValueError("VIN must contain ASCII characters") from exc
+        if definition is None:
+            raise ValueError(f"Unknown DID: 0x{response.did:04X}")
+
+        value = self._did_decoder.decode(
+            definition,
+            response.value,
+        )
+
+        return value
 
     def read_dtc_information(
         self,

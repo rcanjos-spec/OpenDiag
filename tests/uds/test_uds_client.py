@@ -1,8 +1,11 @@
+from pathlib import Path
 from unittest.mock import Mock
 
 import pytest
 
 from opendiag.uds.client import UDSClient
+from opendiag.uds.did_decoder import DIDDecoder
+from opendiag.uds.did_resolver import DIDResolver
 from opendiag.uds.reset import ResetType
 from opendiag.uds.response_parser import UDSResponseParser
 from opendiag.uds.response_registry import ResponseRegistry
@@ -291,7 +294,7 @@ def test_read_vin() -> None:
 def test_read_vin_rejects_invalid_length() -> None:
     transport = Mock()
 
-    transport.receive.return_value = b"\x62\xf1\x90" + b"123"
+    transport.receive.return_value = b"\x62\xf1\x90" + b"1HGCM82633A00435\xff"
 
     client = UDSClient(
         transport=transport,
@@ -299,8 +302,10 @@ def test_read_vin_rejects_invalid_length() -> None:
             registry=ResponseRegistry(),
         ),
     )
-
-    with pytest.raises(ValueError, match="VIN must contain 17 characters"):
+    with pytest.raises(
+        ValueError,
+        match="DID value must contain ASCII characters",
+    ):
         client.read_vin()
 
 
@@ -318,7 +323,7 @@ def test_read_vin_rejects_non_ascii() -> None:
 
     with pytest.raises(
         ValueError,
-        match="VIN must contain ASCII characters",
+        match="DID value must contain ASCII characters",
     ):
         client.read_vin()
 
@@ -347,3 +352,30 @@ def test_read_data_by_identifier() -> None:
     )
 
     assert response == "OK"
+
+
+def test_uds_client_reads_vin() -> None:
+    transport = Mock()
+
+    transport.receive.return_value = bytes.fromhex(
+        "62 F1 90 31 48 47 43 4D 38 32 36 33 33 41 30 30 34 33 35 32"
+    )
+
+    client = UDSClient(
+        transport=transport,
+        parser=UDSResponseParser(
+            registry=ResponseRegistry(),
+        ),
+        did_resolver=DIDResolver(
+            Path("data/dids/generic.json"),
+        ),
+        did_decoder=DIDDecoder(),
+    )
+
+    vin = client.read_vin()
+
+    assert vin == "1HGCM82633A004352"
+
+    transport.send.assert_called_once_with(
+        bytes.fromhex("22 F1 90"),
+    )
