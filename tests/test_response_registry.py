@@ -1,3 +1,4 @@
+from opendiag.uds.response import NegativeResponse
 from opendiag.uds.response_registry import ResponseRegistry
 from opendiag.uds.responses.diagnostic_session_control import (
     DiagnosticSessionControlResponse,
@@ -60,3 +61,11 @@ def test_default_registry_contains_tester_present() -> None:
     registry = ResponseRegistry()
 
     assert registry.get(0x7E) is TesterPresentResponse
+
+
+def test_registry_contains_negative_response() -> None:
+    registry = ResponseRegistry()
+
+    response_class = registry.get(0x7F)
+
+    assert response_class is NegativeResponse

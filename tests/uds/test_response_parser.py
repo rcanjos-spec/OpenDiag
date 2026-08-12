@@ -1,4 +1,5 @@
 from opendiag.uds.reset import ResetType
+from opendiag.uds.response import NegativeResponse
 from opendiag.uds.response_parser import UDSResponseParser
 from opendiag.uds.response_registry import ResponseRegistry
 from opendiag.uds.responses.diagnostic_session_control import (
@@ -133,3 +134,18 @@ def test_parse_read_dtc_information_response() -> None:
 
     assert response.dtcs[1].code == 0x013000
     assert response.dtcs[1].status == 0x40
+
+
+def test_parse_negative_response() -> None:
+    parser = UDSResponseParser(
+        registry=ResponseRegistry(),
+    )
+
+    response = parser.parse(
+        bytes.fromhex("7F 22 31"),
+    )
+
+    assert isinstance(response, NegativeResponse)
+    assert response.sid == 0x7F
+    assert response.original_sid == 0x22
+    assert response.response_code == 0x31

@@ -5,6 +5,7 @@ Maps UDS response service identifiers to the classes responsible
 for decoding those responses.
 """
 
+from opendiag.uds.response import NegativeResponse
 from opendiag.uds.responses.diagnostic_session_control import (
     DiagnosticSessionControlResponse,
 )
@@ -72,6 +73,12 @@ class ResponseRegistry:
         self.register(
             0x7E,
             TesterPresentResponse,
+        )
+
+        # Negative response: 0x7F.
+        self.register(
+            0x7F,
+            NegativeResponse,
         )
 
     def register(

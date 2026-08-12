@@ -50,3 +50,19 @@ class NegativeResponse(UDSResponse):
 
     # UDS negative response code returned by the target.
     response_code: int
+
+    @classmethod
+    def from_bytes(
+        cls,
+        data: bytes,
+    ) -> NegativeResponse:
+        """Decode a raw UDS negative response."""
+
+        if len(data) < 3:
+            raise ValueError("Invalid negative UDS response")
+
+        return cls(
+            sid=data[0],
+            original_sid=data[1],
+            response_code=data[2],
+        )

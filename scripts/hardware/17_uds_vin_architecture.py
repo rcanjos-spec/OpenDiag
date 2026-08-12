@@ -1,6 +1,10 @@
+from pathlib import Path
+
 from opendiag.bus.python_can import PythonCANBus
 from opendiag.protocols.isotp_transport import ISOTPTransport
 from opendiag.uds.client import UDSClient
+from opendiag.uds.did_decoder import DIDDecoder
+from opendiag.uds.did_resolver import DIDResolver
 from opendiag.uds.response_parser import UDSResponseParser
 from opendiag.uds.response_registry import ResponseRegistry
 
@@ -27,8 +31,11 @@ try:
     client = UDSClient(
         transport=transport,
         parser=parser,
+        did_resolver=DIDResolver(
+            Path("data/dids/generic.json"),
+        ),
+        did_decoder=DIDDecoder(),
     )
-
     print("## KACTOENG - UDS VIN Reader")
     print()
     print("Interface : COM6")

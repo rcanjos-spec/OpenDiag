@@ -1,0 +1,96 @@
+{
+  "timestamp": "2026-08-12T22:03:11.532618+00:00",
+  "tool": "19_uds_ecu_data_reader",
+  "interface": "COM6",
+  "bitrate": 500000,
+  "tx_id": "0x18DA10F1",
+  "rx_id": "0x18DAF110",
+  "flow_control_id": "0x18DA10F1",
+  "ecu": {
+    "family": "IAW 10GF",
+    "hardware": "MM10GFHW015",
+    "supplier": "Magneti Marelli"
+  },
+  "results": [
+    {
+      "did": "0xF18C",
+      "name": "ECU Serial Number",
+      "type": "ascii",
+      "status": "positive",
+      "raw": "54 44 34 31 39 31 39 33 34 4E 31 35 36 35 30",
+      "value": "TD4191934N15650",
+      "length": 15,
+      "elapsed_ms": 52.22
+    },
+    {
+      "did": "0xF190",
+      "name": "Vehicle Identification Number",
+      "type": "ascii",
+      "status": "positive",
+      "raw": "39 42 44 33 35 38 41 43 47 53 59 4E 34 34 35 30 30",
+      "value": "9BD358ACGSYN44500",
+      "length": 17,
+      "elapsed_ms": 18.11
+    },
+    {
+      "did": "0xF191",
+      "name": "Vehicle Manufacturer ECU Hardware Number",
+      "type": "ascii",
+      "status": "value_under_investigation",
+      "raw": "35 32 32 30 36 31 34 30 20 20 20",
+      "value": "52206140   ",
+      "length": 11,
+      "elapsed_ms": 18.95
+    },
+    {
+      "did": "0xF192",
+      "name": "System Supplier ECU Hardware Number",
+      "type": "ascii",
+      "status": "positive",
+      "raw": "4D 4D 31 30 47 46 48 57 30 31 35",
+      "value": "MM10GFHW015",
+      "length": 11,
+      "elapsed_ms": 19.83
+    },
+    {
+      "did": "0xF193",
+      "name": "System Supplier ECU Hardware Version",
+      "type": "hex",
+      "status": "positive",
+      "raw": "00",
+      "value": "00",
+      "length": 1,
+      "elapsed_ms": 11.88
+    },
+    {
+      "did": "0xF194",
+      "name": "System Supplier ECU Software Number",
+      "type": "ascii",
+      "status": "positive",
+      "raw": "4B 42 39 31 4E 36 31 20 20 20 20",
+      "value": "KB91N61    ",
+      "length": 11,
+      "elapsed_ms": 19.16
+    },
+    {
+      "did": "0xF195",
+      "name": "System Supplier ECU Software Version",
+      "type": "hex",
+      "status": "positive",
+      "raw": "00 00",
+      "value": "00 00",
+      "length": 2,
+      "elapsed_ms": 11.75
+    },
+    {
+      "did": "0xF196",
+      "name": "Exhaust Regulation / Type Approval Number",
+      "type": "ascii",
+      "status": "positive",
+      "raw": "31 30 47 46 47 43",
+      "value": "10GFGC",
+      "length": 6,
+      "elapsed_ms": 15.73
+    }
+  ]
+}
