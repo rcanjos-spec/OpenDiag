@@ -3,5 +3,10 @@
     "name": "VIN",
     "type": "ascii",
     "length": 17
+  },
+  "F191": {
+    "name": "Example Numeric Value",
+    "type": "uint16",
+    "length": 2
   }
 }

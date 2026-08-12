@@ -24,3 +24,25 @@ def test_resolve_and_decode_vin() -> None:
     )
 
     assert value == "1HGCM82633A004352"
+
+
+def test_resolve_and_decode_uint16_did() -> None:
+    resolver = DIDResolver(
+        Path("data/dids/generic.json"),
+    )
+
+    decoder = DIDDecoder()
+
+    definition = resolver.resolve(0xF191)
+
+    assert definition is not None
+    assert definition.name == "Example Numeric Value"
+    assert definition.type == "uint16"
+    assert definition.length == 2
+
+    value = decoder.decode(
+        definition,
+        b"\x12\x34",
+    )
+
+    assert value == 0x1234
