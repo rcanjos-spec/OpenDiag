@@ -312,3 +312,156 @@ def test_uds_client_parses_no_dtcs() -> None:
     dtcs = UDSClient.parse_dtc_information(response)
 
     assert dtcs == []
+
+
+def test_uds_dtc_status_test_failed() -> None:
+    response = bytes.fromhex("59 02 CF 01 23 45 01")
+
+    dtcs = UDSClient.parse_dtc_information(response)
+
+    assert len(dtcs) == 1
+    assert dtcs[0].status == 0x01
+    assert dtcs[0].test_failed is True
+
+
+def test_uds_dtc_status_test_failed_false() -> None:
+    response = bytes.fromhex("59 02 CF 01 23 45 00")
+
+    dtcs = UDSClient.parse_dtc_information(response)
+
+    assert len(dtcs) == 1
+    assert dtcs[0].status == 0x00
+    assert dtcs[0].test_failed is False
+
+
+def test_uds_dtc_status_test_failed_this_operation_cycle() -> None:
+    response = bytes.fromhex("59 02 CF 01 23 45 02")
+
+    dtcs = UDSClient.parse_dtc_information(response)
+
+    assert len(dtcs) == 1
+    assert dtcs[0].status == 0x02
+    assert dtcs[0].test_failed_this_operation_cycle is True
+
+
+def test_uds_dtc_status_test_failed_this_operation_cycle_false() -> None:
+    response = bytes.fromhex("59 02 CF 01 23 45 00")
+
+    dtcs = UDSClient.parse_dtc_information(response)
+
+    assert len(dtcs) == 1
+    assert dtcs[0].test_failed_this_operation_cycle is False
+
+
+def test_uds_dtc_status_pending() -> None:
+    response = bytes.fromhex("59 02 CF 01 23 45 04")
+
+    dtcs = UDSClient.parse_dtc_information(response)
+
+    assert len(dtcs) == 1
+    assert dtcs[0].status == 0x04
+    assert dtcs[0].pending_dtc is True
+
+
+def test_uds_dtc_status_pending_false() -> None:
+    response = bytes.fromhex("59 02 CF 01 23 45 00")
+
+    dtcs = UDSClient.parse_dtc_information(response)
+
+    assert len(dtcs) == 1
+    assert dtcs[0].pending_dtc is False
+
+
+def test_uds_dtc_status_confirmed() -> None:
+    response = bytes.fromhex("59 02 CF 01 23 45 08")
+
+    dtcs = UDSClient.parse_dtc_information(response)
+
+    assert len(dtcs) == 1
+    assert dtcs[0].status == 0x08
+    assert dtcs[0].confirmed_dtc is True
+
+
+def test_uds_dtc_status_confirmed_false() -> None:
+    response = bytes.fromhex("59 02 CF 01 23 45 00")
+
+    dtcs = UDSClient.parse_dtc_information(response)
+
+    assert len(dtcs) == 1
+    assert dtcs[0].confirmed_dtc is False
+
+
+def test_uds_dtc_status_not_completed_since_last_clear() -> None:
+    response = bytes.fromhex("59 02 CF 01 23 45 10")
+
+    dtcs = UDSClient.parse_dtc_information(response)
+
+    assert len(dtcs) == 1
+    assert dtcs[0].status == 0x10
+    assert dtcs[0].test_not_completed_since_last_clear is True
+
+
+def test_uds_dtc_status_not_completed_since_last_clear_false() -> None:
+    response = bytes.fromhex("59 02 CF 01 23 45 00")
+
+    dtcs = UDSClient.parse_dtc_information(response)
+
+    assert len(dtcs) == 1
+    assert dtcs[0].test_not_completed_since_last_clear is False
+
+
+def test_uds_dtc_status_failed_since_last_clear() -> None:
+    response = bytes.fromhex("59 02 CF 01 23 45 20")
+
+    dtcs = UDSClient.parse_dtc_information(response)
+
+    assert len(dtcs) == 1
+    assert dtcs[0].status == 0x20
+    assert dtcs[0].test_failed_since_last_clear is True
+
+
+def test_uds_dtc_status_failed_since_last_clear_false() -> None:
+    response = bytes.fromhex("59 02 CF 01 23 45 00")
+
+    dtcs = UDSClient.parse_dtc_information(response)
+
+    assert len(dtcs) == 1
+    assert dtcs[0].test_failed_since_last_clear is False
+
+
+def test_uds_dtc_status_not_completed_this_operation_cycle() -> None:
+    response = bytes.fromhex("59 02 CF 01 23 45 40")
+
+    dtcs = UDSClient.parse_dtc_information(response)
+
+    assert len(dtcs) == 1
+    assert dtcs[0].status == 0x40
+    assert dtcs[0].test_not_completed_this_operation_cycle is True
+
+
+def test_uds_dtc_status_not_completed_this_operation_cycle_false() -> None:
+    response = bytes.fromhex("59 02 CF 01 23 45 00")
+
+    dtcs = UDSClient.parse_dtc_information(response)
+
+    assert len(dtcs) == 1
+    assert dtcs[0].test_not_completed_this_operation_cycle is False
+
+
+def test_uds_dtc_status_warning_indicator_requested() -> None:
+    response = bytes.fromhex("59 02 CF 01 23 45 80")
+
+    dtcs = UDSClient.parse_dtc_information(response)
+
+    assert len(dtcs) == 1
+    assert dtcs[0].status == 0x80
+    assert dtcs[0].warning_indicator_requested is True
+
+
+def test_uds_dtc_status_warning_indicator_requested_false() -> None:
+    response = bytes.fromhex("59 02 CF 01 23 45 00")
+
+    dtcs = UDSClient.parse_dtc_information(response)
+
+    assert len(dtcs) == 1
+    assert dtcs[0].warning_indicator_requested is False

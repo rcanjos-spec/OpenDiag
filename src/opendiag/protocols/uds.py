@@ -57,6 +57,54 @@ class UDSDTC:
     code: int
     status: int
 
+    @property
+    def test_failed(self) -> bool:
+        """Return whether the DTC test failed."""
+
+        return bool(self.status & 0x01)
+
+    @property
+    def test_failed_this_operation_cycle(self) -> bool:
+        """Return whether the DTC test failed in this operation cycle."""
+
+        return bool(self.status & 0x02)
+
+    @property
+    def pending_dtc(self) -> bool:
+        """Return whether the DTC is pending."""
+
+        return bool(self.status & 0x04)
+
+    @property
+    def confirmed_dtc(self) -> bool:
+        """Return whether the DTC is confirmed."""
+
+        return bool(self.status & 0x08)
+
+    @property
+    def test_not_completed_since_last_clear(self) -> bool:
+        """Return whether the test has not completed since the last clear."""
+
+        return bool(self.status & 0x10)
+
+    @property
+    def test_failed_since_last_clear(self) -> bool:
+        """Return whether the test failed since the last clear."""
+
+        return bool(self.status & 0x20)
+
+    @property
+    def test_not_completed_this_operation_cycle(self) -> bool:
+        """Return whether the test has not completed this operation cycle."""
+
+        return bool(self.status & 0x40)
+
+    @property
+    def warning_indicator_requested(self) -> bool:
+        """Return whether the warning indicator is requested."""
+
+        return bool(self.status & 0x80)
+
 
 class UDSClient:
     """Basic UDS client over an ISO-TP transport."""

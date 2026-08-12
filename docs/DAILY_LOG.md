@@ -337,3 +337,248 @@ A ideia é evoluir de uma análise estrutural do frame para uma primeira camada 
 ## Frase para retomada
 
 > **“Hoje o OpenDiag deixou de apenas observar o tráfego CAN e passou a reconhecer parte da estrutura interna dos frames reais.”**
+
+# OpenDiag — Daily Log
+
+**Data:** 11/08/2026
+**Projeto:** OpenDiag
+**Branch:** `main`
+**Status:** Checkpoint concluído — working tree clean
+
+## 1. Objetivo do dia
+
+Continuar a implementação e validação da camada **UDS sobre ISO-TP**, com foco na leitura de DTCs (`0x19`) utilizando hardware real através da interface CAN na COM6.
+
+---
+
+## 2. Atividades realizadas
+
+### ISO-TP
+
+Foi investigado e corrigido o comportamento de mensagens ISO-TP longas.
+
+Validações realizadas:
+
+* First Frame recebido corretamente.
+* Flow Control `30 00 00` enviado corretamente.
+* Consecutive Frames recebidos em sequência.
+* Validação do rollover do Sequence Number:
+
+  * `0x0E`
+  * `0x0F`
+  * `0x00`
+  * `0x01`
+* Reassembly de mensagens longas validado.
+* Timeout de reassembly tornou-se configurável através de `reassembly_timeout`.
+
+Foi criado teste específico para garantir o funcionamento do rollover `0x0F → 0x00`.
+
+---
+
+## 3. UDS — ReadDTCInformation
+
+Foi implementado e validado o serviço:
+
+```text
+0x19 — ReadDTCInformation
+```
+
+com a subfunção:
+
+```text
+0x02 — reportDTCByStatusMask
+```
+
+e utilização da máscara:
+
+```text
+FF
+```
+
+A requisição utilizada no hardware foi:
+
+```text
+19 02 FF
+```
+
+A ECU respondeu com uma mensagem ISO-TP longa iniciada por:
+
+```text
+11 B3 59 02 CF ...
+```
+
+Foi identificado corretamente que:
+
+```text
+59 02 CF
+```
+
+contém:
+
+* `59` — resposta positiva do serviço `0x19`
+* `02` — subfunção
+* `CF` — DTC Status Availability Mask
+
+Os DTCs seguintes possuem o formato:
+
+```text
+DD DD DD SS
+```
+
+onde:
+
+* `DD DD DD` = código DTC de 24 bits
+* `SS` = status do DTC
+
+O parser foi corrigido para considerar o byte `CF` antes dos registros de DTC.
+
+---
+
+## 4. Validação em hardware real
+
+Foi executado o script:
+
+```text
+scripts/hardware/13_uds_dtc.py
+```
+
+Interface utilizada:
+
+```text
+COM6
+Bitrate: 500000
+```
+
+IDs:
+
+```text
+TX ID: 18DA10F1
+RX ID: 18DAF110
+FC ID: 18DA10F1
+```
+
+Resultado:
+
+```text
+DTCs encontrados: 108
+```
+
+O OpenDiag conseguiu completar o ciclo:
+
+```text
+UDS Request
+    ↓
+CAN
+    ↓
+ISO-TP First Frame
+    ↓
+Flow Control
+    ↓
+Consecutive Frames
+    ↓
+ISO-TP Reassembly
+    ↓
+UDS Parser
+    ↓
+UDSDTC[]
+```
+
+### Resultado principal
+
+**108 DTCs reais foram lidos da ECU e convertidos para objetos estruturados pelo OpenDiag.**
+
+Primeiros registros obtidos:
+
+```text
+DTC=0x010700 STATUS=0x0F
+DTC=0x013000 STATUS=0x40
+DTC=0x011800 STATUS=0x0E
+DTC=0x056200 STATUS=0x40
+DTC=0x056300 STATUS=0x40
+```
+
+---
+
+## 5. Testes automatizados
+
+Resultado final da suíte:
+
+```text
+216 passed in 2.42s
+```
+
+Qualidade de código:
+
+```text
+ruff check
+All checks passed!
+```
+
+Formatação:
+
+```text
+ruff format --check
+157 files already formatted
+```
+
+---
+
+## 6. Git
+
+Alterações consolidadas e commitadas.
+
+Estado final:
+
+```text
+On branch main
+Your branch is up to date with 'origin/main'.
+
+nothing to commit, working tree clean
+```
+
+Checkpoint do projeto concluído com sucesso.
+
+---
+
+## 7. Conquistas do dia
+
+Hoje o OpenDiag passou por uma validação importante:
+
+> **Não estamos mais apenas simulando UDS/ISO-TP em testes unitários. O OpenDiag conseguiu conversar com uma ECU real, transportar uma resposta ISO-TP de grande porte e interpretar 108 DTCs reais.**
+
+Isso representa a validação integrada das camadas:
+
+```text
+CAN
+ ↓
+ISO-TP
+ ↓
+UDS
+ ↓
+ECU REAL
+```
+
+---
+
+## 8. Próximos passos
+
+Para a próxima etapa:
+
+1. Melhorar a estrutura `UDSDTC`.
+2. Preservar o `DTC Status Availability Mask` na resposta.
+3. Criar interpretação dos bits de status do DTC.
+4. Separar claramente:
+
+   * código bruto;
+   * status bruto;
+   * interpretação do status.
+5. Melhorar a apresentação dos DTCs para o usuário.
+6. Depois avançar para novos serviços UDS.
+
+**Importante:** não alterar novamente a camada ISO-TP sem necessidade. A comunicação física e o reassembly já foram validados com sucesso.
+
+---
+
+## Frase do dia
+
+> **Hoje o OpenDiag deixou de apenas testar protocolos e começou a diagnosticar uma ECU de verdade.**
