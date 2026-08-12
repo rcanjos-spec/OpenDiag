@@ -77,3 +77,51 @@ def test_decode_rejects_unsupported_type() -> None:
         assert "Unsupported DID type" in str(exc)
     else:
         raise AssertionError("Expected ValueError")
+
+
+def test_decode_uint8() -> None:
+    definition = DIDDefinition(
+        name="Example",
+        type="uint8",
+        length=1,
+    )
+
+    decoder = DIDDecoder()
+
+    assert decoder.decode(definition, b"\x2a") == 42
+
+
+def test_decode_uint16() -> None:
+    definition = DIDDefinition(
+        name="Example",
+        type="uint16",
+        length=2,
+    )
+
+    decoder = DIDDecoder()
+
+    assert (
+        decoder.decode(
+            definition,
+            b"\x12\x34",
+        )
+        == 0x1234
+    )
+
+
+def test_decode_uint32() -> None:
+    definition = DIDDefinition(
+        name="Example",
+        type="uint32",
+        length=4,
+    )
+
+    decoder = DIDDecoder()
+
+    assert (
+        decoder.decode(
+            definition,
+            b"\x12\x34\x56\x78",
+        )
+        == 0x12345678
+    )
