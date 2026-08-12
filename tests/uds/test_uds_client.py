@@ -280,6 +280,10 @@ def test_read_vin() -> None:
         parser=UDSResponseParser(
             registry=ResponseRegistry(),
         ),
+        did_resolver=DIDResolver(
+            Path("data/dids/generic.json"),
+        ),
+        did_decoder=DIDDecoder(),
     )
 
     vin = client.read_vin()
@@ -301,7 +305,12 @@ def test_read_vin_rejects_invalid_length() -> None:
         parser=UDSResponseParser(
             registry=ResponseRegistry(),
         ),
+        did_resolver=DIDResolver(
+            Path("data/dids/generic.json"),
+        ),
+        did_decoder=DIDDecoder(),
     )
+
     with pytest.raises(
         ValueError,
         match="DID value must contain ASCII characters",
@@ -319,6 +328,10 @@ def test_read_vin_rejects_non_ascii() -> None:
         parser=UDSResponseParser(
             registry=ResponseRegistry(),
         ),
+        did_resolver=DIDResolver(
+            Path("data/dids/generic.json"),
+        ),
+        did_decoder=DIDDecoder(),
     )
 
     with pytest.raises(
@@ -375,6 +388,33 @@ def test_uds_client_reads_vin() -> None:
     vin = client.read_vin()
 
     assert vin == "1HGCM82633A004352"
+
+    transport.send.assert_called_once_with(
+        bytes.fromhex("22 F1 90"),
+    )
+
+
+def test_read_did() -> None:
+    transport = Mock()
+
+    transport.receive.return_value = bytes.fromhex(
+        "62 F1 90 31 48 47 43 4D 38 32 36 33 33 41 30 30 34 33 35 32"
+    )
+
+    client = UDSClient(
+        transport=transport,
+        parser=UDSResponseParser(
+            registry=ResponseRegistry(),
+        ),
+        did_resolver=DIDResolver(
+            Path("data/dids/generic.json"),
+        ),
+        did_decoder=DIDDecoder(),
+    )
+
+    value = client.read_did(0xF190)
+
+    assert value == "1HGCM82633A004352"
 
     transport.send.assert_called_once_with(
         bytes.fromhex("22 F1 90"),

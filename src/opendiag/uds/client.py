@@ -1,7 +1,3 @@
-from pathlib import Path
-
-from opendiag.uds.did_decoder import DIDDecoder
-from opendiag.uds.did_resolver import DIDResolver
 from opendiag.uds.request import UDSRequest
 from opendiag.uds.reset import ResetType
 from opendiag.uds.security import SecurityLevel
@@ -42,10 +38,8 @@ class UDSClient:
         self._transport = transport
         self._scanner = scanner
         self._parser = parser
-        self._did_resolver = did_resolver or DIDResolver(
-            Path("data/dids/generic.json"),
-        )
-        self._did_decoder = did_decoder or DIDDecoder()
+        self._did_resolver = did_resolver
+        self._did_decoder = did_decoder
 
     def read_data_by_identifier(
         self,
@@ -57,6 +51,21 @@ class UDSClient:
             ReadDataByIdentifier(
                 did=did,
             )
+        )
+
+    def read_did(self, did: int):
+        """Read and decode a diagnostic data identifier."""
+
+        response = self.read_data_by_identifier(did)
+
+        definition = self._did_resolver.resolve(did)
+
+        if definition is None:
+            raise ValueError(f"Unknown DID: 0x{did:04X}")
+
+        return self._did_decoder.decode(
+            definition,
+            response.value,
         )
 
     def read_vin(self) -> str:
