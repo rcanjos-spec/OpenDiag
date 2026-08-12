@@ -488,3 +488,28 @@ def test_read_did_requires_did_decoder() -> None:
         match="DID decoder is not configured",
     ):
         client.read_did(0xF190)
+
+
+def test_read_did_uint16() -> None:
+    transport = Mock()
+
+    transport.receive.return_value = bytes.fromhex("62 F1 91 12 34")
+
+    client = UDSClient(
+        transport=transport,
+        parser=UDSResponseParser(
+            registry=ResponseRegistry(),
+        ),
+        did_resolver=DIDResolver(
+            Path("data/dids/generic.json"),
+        ),
+        did_decoder=DIDDecoder(),
+    )
+
+    value = client.read_did(0xF191)
+
+    assert value == 0x1234
+
+    transport.send.assert_called_once_with(
+        bytes.fromhex("22 F1 91"),
+    )
