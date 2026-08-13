@@ -14,23 +14,15 @@ TX_ID = 0x18DA10F1
 RX_ID = 0x18DAF110
 FLOW_CONTROL_ID = 0x18DA10F1
 
-DIDS_TO_SCAN = [
-    0xF18A,
-    0xF18B,
-    0xF18C,
-    0xF18D,
-    0xF18E,
-    0xF190,  # controle positivo
-    0xF191,
-    0xF192,
-    0xF193,
-    0xF194,
-    0xF195,
-    0xF196,
-    0xF197,
-    0xF198,
-    0xF199,
-]
+DID_START = 0xFF00
+DID_END = 0xFFFF
+
+DIDS_TO_SCAN = list(
+    range(
+        DID_START,
+        DID_END + 1,
+    )
+)
 
 LOG_DIR = Path("logs/dids")
 

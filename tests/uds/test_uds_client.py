@@ -55,7 +55,7 @@ def test_send_receives_response() -> None:
 
     client.send(TesterPresent())
 
-    transport.receive.assert_called_once_with()
+    transport.receive.assert_called_once_with(timeout=2.0)
 
 
 def test_send_uses_parser() -> None:
@@ -208,7 +208,7 @@ def test_tester_present() -> None:
         b"\x3e\x00",
     )
 
-    transport.receive.assert_called_once_with()
+    transport.receive.assert_called_with(timeout=2.0)
 
     parser.parse.assert_called_once_with(
         b"\x7e\x00",
